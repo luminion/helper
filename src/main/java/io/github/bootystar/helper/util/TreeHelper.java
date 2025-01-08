@@ -55,7 +55,7 @@ public class TreeHelper<T, R> {
      * @return {@link List }<{@link ? } {@link extends } {@link T }>
      * @author bootystar
      */
-    public List<? extends T> buildRelation(Collection<? extends T> elements) {
+    public List<T> buildRelation(Collection<? extends T> elements) {
         ArrayList<T> ts = new ArrayList<>(elements);
         ts.forEach(e -> childElementSetter.accept(e, findDirectChildrenByNode(ts, e)));
         return ts;
@@ -68,7 +68,7 @@ public class TreeHelper<T, R> {
      * @return {@link List }<{@link T }>
      * @author bootystar
      */
-    public List<? extends T> treeRoot(Collection<? extends T> elements) {
+    public List<T> treeRoot(Collection<? extends T> elements) {
         return buildRelation(elements).stream().filter(e -> parentIdGetter.apply(e) == null).collect(Collectors.toList());
     }
 

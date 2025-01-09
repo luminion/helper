@@ -17,16 +17,23 @@ import java.util.function.Consumer;
  */
 @Slf4j
 public class HttpRequest {
-    private String httpUrl;
-    private String method;
-    private Charset charset = StandardCharsets.UTF_8;
-    private int timeout = 3000;
-    private boolean executed;
+    protected String httpUrl;
+    protected String httpMethod;
+    protected Charset HttpCharset = StandardCharsets.UTF_8;
+    protected int timeout = 3000;
+    protected boolean executed;
+    protected Map<String, String> header;
+    protected String body;
+    protected int responseCode = -1;
 
-    private Map<String, String> header;
-    private String body;
+    public int getResponseCode() {
+        if (responseCode==-1){
+            throw new IllegalStateException("connection not open yet");
+        }
+        return responseCode;
+    }
 
-    private static String createParams(Map<?, ?> args) {
+    protected static String createParams(Map<?, ?> args) {
         if (args != null && !args.isEmpty()) {
             StringBuilder sb = new StringBuilder();
             Iterator<? extends Map.Entry<?, ?>> it = args.entrySet().iterator();
@@ -40,15 +47,15 @@ public class HttpRequest {
     }
 
 
-    protected HttpRequest(String httpUrl, String method) {
+    protected HttpRequest(String httpUrl, String httpMethod) {
         this.httpUrl = httpUrl;
-        this.method = method;
+        this.httpMethod = httpMethod;
     }
 
-    protected HttpRequest(String httpUrl, String method, Charset charset, int timeout) {
+    protected HttpRequest(String httpUrl, String httpMethod, Charset HttpCharset, int timeout) {
         this.httpUrl = httpUrl;
-        this.method = method;
-        this.charset = charset;
+        this.httpMethod = httpMethod;
+        this.HttpCharset = HttpCharset;
         this.timeout = timeout;
     }
 
@@ -77,7 +84,7 @@ public class HttpRequest {
             // 通过远程url连接对象打开连接
             connection = (HttpURLConnection) url.openConnection();
             // 设置连接请求方式
-            connection.setRequestMethod(method);
+            connection.setRequestMethod(httpMethod);
             // 设置超时时间： 毫秒
             connection.setConnectTimeout(timeout);
             // 设置传入参数的格式(Content-Type等):请求参数应该是 name1=value1&name2=value2 的形式。
@@ -100,8 +107,8 @@ public class HttpRequest {
             connection.getResponseCode();
             consumer.accept(connection);
         } catch (IOException e) {
-            log.error("execute failed:", e);
-            throw new RuntimeException(e.getMessage());
+            log.error("request execute failed:", e);
+            throw new IllegalStateException(e);
         } finally {
             if (connection != null) {
                 connection.disconnect();
@@ -109,12 +116,39 @@ public class HttpRequest {
         }
     }
 
-    protected InputStream execute4InputStream() {
+    protected void execute4InputStream(Consumer<InputStream> consumer) {
+        execute4UrlContention(connection -> {
+            try (InputStream inputStream = connection.getInputStream();) {
+                consumer.accept(inputStream);
+            } catch (Exception e) {
+                log.error("get inputStream failed:", e);
+                throw new IllegalStateException(e);
+            }
+        });
+    }
 
+    public String execute4String(Charset charset) {
+        StringBuilder sb = new StringBuilder();
+        execute4InputStream(is -> {
+            try (
+                    InputStreamReader isr = new InputStreamReader(is, charset);
+                    BufferedReader br = new BufferedReader(isr);
+            ) {
+                String temp;
+                while ((temp = br.readLine()) != null) {
+                    sb.append(temp);
+                    sb.append("\r\n");
+                }
+            } catch (Exception e) {
+                log.error("convert to string failed:", e);
+                throw new IllegalStateException(e);
+            }
+        });
+        return sb.toString();
     }
 
     public String execute4String() {
-
+        return execute4String(HttpCharset);
     }
 
 

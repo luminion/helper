@@ -1,10 +1,9 @@
-package io.github.bootystar.helper.util;
+package io.github.bootystar.helper.base.http;
 
 
 import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -14,7 +13,7 @@ import java.util.Map;
  *
  * @author bootystar
  */
-public class HttpHelper {
+public abstract class HttpHelper {
 
     public final static String METHOD_GET = "GET";
     public final static String METHOD_POST = "POST";

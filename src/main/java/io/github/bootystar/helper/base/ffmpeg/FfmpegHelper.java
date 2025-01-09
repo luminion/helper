@@ -1,4 +1,4 @@
-package io.github.bootystar.helper.ffmpeg;
+package io.github.bootystar.helper.base.ffmpeg;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -15,7 +15,7 @@ import static java.time.temporal.ChronoUnit.*;
 
 
 @Slf4j
-public class Ffmpeg {
+public class FfmpegHelper {
     private final String ffplay;
     private final String ffmpeg;
     private final String ffprobe;
@@ -31,7 +31,7 @@ public class Ffmpeg {
      * @param tempMediaPath 临时文件保存路径
      * @author bootystar
      */
-    public Ffmpeg(String ffplay, String ffmpeg, String ffprobe, String tempMediaPath) {
+    public FfmpegHelper(String ffplay, String ffmpeg, String ffprobe, String tempMediaPath) {
         this.ffplay = ffplay;
         this.ffmpeg = ffmpeg;
         this.ffprobe = ffprobe;

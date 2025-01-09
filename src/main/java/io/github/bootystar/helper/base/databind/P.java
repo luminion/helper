@@ -1,4 +1,4 @@
-package io.github.bootystar.helper.databind;
+package io.github.bootystar.helper.base.databind;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

@@ -1,8 +1,4 @@
-package io.github.bootystar.helper.util;
-
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+package io.github.bootystar.helper.base.map;
 
 import java.util.Arrays;
 
@@ -11,20 +7,6 @@ import java.util.Arrays;
  * @author bootystar
  */
 public abstract class MapHelper {
-
-    @Data
-    @NoArgsConstructor
-    @AllArgsConstructor
-    public static class Point {
-        /**
-         * 经度
-         */
-        private double longitude;
-        /**
-         * 纬度
-         */
-        private double latitude;
-    }
 
     /**
      * 地球半径,单位 km

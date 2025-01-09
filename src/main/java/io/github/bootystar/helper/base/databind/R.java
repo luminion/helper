@@ -1,4 +1,4 @@
-package io.github.bootystar.helper.databind;
+package io.github.bootystar.helper.base.databind;
 
 
 import lombok.Data;
@@ -80,7 +80,7 @@ public class R<T> {
     public static <T> R<T> unauthorized() {
         R<T> result = new R<>();
         result.setCode(UNAUTHORIZED);
-        result.setMsg("权限不足");
+        result.setMsg("unauthorized");
         return result;
     }
 

@@ -1,4 +1,4 @@
-package io.github.bootystar.helper.minio;
+package io.github.bootystar.helper.third.minio;
 
 import io.minio.*;
 import lombok.extern.slf4j.Slf4j;
@@ -8,18 +8,18 @@ import java.io.InputStream;
 import java.io.OutputStream;
 
 @Slf4j
-public class Minio {
+public class MinioHelper {
 
     protected String defaultBucket = "defaultBucket";
 
 
     protected MinioClient minioClient;
 
-    public Minio(MinioClient minioClient) {
+    public MinioHelper(MinioClient minioClient) {
         this.minioClient = minioClient;
         init();
     }
-    public Minio(MinioClient minioClient, String defaultBucket) {
+    public MinioHelper(MinioClient minioClient, String defaultBucket) {
         this.minioClient = minioClient;
         this.defaultBucket = defaultBucket;
         init();

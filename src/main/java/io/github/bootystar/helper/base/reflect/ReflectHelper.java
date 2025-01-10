@@ -142,11 +142,44 @@ public abstract class ReflectHelper {
      *
      * @param source 来源
      * @param clazz  目标类
-     * @return {@link U }
+     * @return {@link T }
      * @author bootystar
      */
-    public static <U> U toTarget(Object source, Class<U> clazz) {
+    public static <T> T toTarget(Object source, Class<T> clazz) {
         return copyFieldProperties(source, newInstance(clazz));
     }
+
+
+    /**
+     * 创建两个对象的差异属性(来源对象为null的属性不会判断)
+     *
+     * @param source 来源
+     * @param target 目标
+     * @return {@link T }
+     * @author bootystar
+     */
+    @SneakyThrows
+    public static <T> T toDifference(T source, T target) {
+        if (source == null || target == null || source.equals(target)) {
+            return null;
+        }
+        Class<T> clazz = (Class<T>) source.getClass();
+        Map<String, Field> fieldMap = fieldMap(clazz);
+        T instance = null;
+        Collection<Field> values = fieldMap.values();
+        for (Field field : values) {
+            Object o = field.get(source);
+            if (o == null) continue;
+            Object o1 = field.get(target);
+            if (!o.equals(o1)) {
+                if (instance == null) {
+                    instance = newInstance(clazz);
+                }
+                field.set(instance, o);
+            }
+        }
+        return instance;
+    }
+
 
 }

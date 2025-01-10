@@ -1,6 +1,5 @@
 package io.github.bootystar.helper.base.http;
 
-import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.*;
@@ -33,27 +32,27 @@ public class HttpHelper {
     protected int responseCode = -1;
 
 
-    public static HttpHelper get(String url){
+    public static HttpHelper get(String url) {
         return new HttpHelper(url, "GET");
     }
 
-    public static HttpHelper post(String url){
+    public static HttpHelper post(String url) {
         return new HttpHelper(url, "POST");
     }
 
-    public static HttpHelper put(String url){
+    public static HttpHelper put(String url) {
         return new HttpHelper(url, "PUT");
     }
 
-    public static HttpHelper delete(String url){
+    public static HttpHelper delete(String url) {
         return new HttpHelper(url, "DELETE");
     }
 
-    public static HttpHelper head(String url){
+    public static HttpHelper head(String url) {
         return new HttpHelper(url, "HEAD");
     }
 
-    public static HttpHelper options(String url){
+    public static HttpHelper options(String url) {
         return new HttpHelper(url, "OPTIONS");
     }
 
@@ -143,7 +142,6 @@ public class HttpHelper {
     }
 
 
-    @SneakyThrows
     protected void execute(Consumer<HttpURLConnection> consumer) {
         if (executed) {
             throw new IllegalStateException("request has been executed");

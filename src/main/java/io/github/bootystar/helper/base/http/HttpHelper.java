@@ -242,13 +242,4 @@ public class HttpHelper {
         return responseString(charset);
     }
 
-    public static void main(String[] args) {
-        HttpHelper http = HttpHelper.get("http://127.0.0.1/limit/entity");
-        http.header("Accept", "application/xml;charset=UTF-8");
-        http.queryParam("age","1");
-        http.readTimeout(2000);
-        String s = http.responseString();
-        System.out.println(s);
-    }
-
 }

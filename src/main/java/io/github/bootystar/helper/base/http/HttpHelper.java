@@ -1,27 +1,63 @@
 package io.github.bootystar.helper.base.http;
 
+import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
 
 import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.util.HashMap;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.function.Consumer;
 
 /**
  * http请求工具类
  *
  * @author bootystar
  */
-public abstract class HttpHelper {
+@Slf4j
+public class HttpHelper {
+    protected String url;
+    protected String method;
+    protected Charset charset = StandardCharsets.UTF_8;
+    protected int connectTimeout = 3000;
+    protected int readTimeout = 10000;
+    protected boolean executed;
+    protected Map<String, String> header = new LinkedHashMap<>();
+    protected Map<String, String> queryParams = new LinkedHashMap<>();
+    protected Map<String, String> formParams = new LinkedHashMap<>();
+    protected String body;
+    protected int responseCode = -1;
 
-    public final static String METHOD_GET = "GET";
-    public final static String METHOD_POST = "POST";
-    public final static String METHOD_PUT = "PUT";
-    public final static String METHOD_DELETE = "DELETE";
 
+    public static HttpHelper get(String url){
+        return new HttpHelper(url, "GET");
+    }
 
-    public static String createParams(Map<?, ?> args) {
+    public static HttpHelper post(String url){
+        return new HttpHelper(url, "POST");
+    }
+
+    public static HttpHelper put(String url){
+        return new HttpHelper(url, "PUT");
+    }
+
+    public static HttpHelper delete(String url){
+        return new HttpHelper(url, "DELETE");
+    }
+
+    public static HttpHelper head(String url){
+        return new HttpHelper(url, "HEAD");
+    }
+
+    public static HttpHelper options(String url){
+        return new HttpHelper(url, "OPTIONS");
+    }
+
+    protected static String formatQueryParams(Map<?, ?> args) {
         if (args != null && !args.isEmpty()) {
             StringBuilder sb = new StringBuilder();
             Iterator<? extends Map.Entry<?, ?>> it = args.entrySet().iterator();
@@ -31,84 +67,188 @@ public abstract class HttpHelper {
             }
             return sb.substring(0, sb.length() - 1);
         }
-        return "";
+        return null;
     }
 
-    public static String doPostFormUrlencoded(String httpUrl, Map<?, ?> bodyArgs) {
-        HashMap<String, String> map = new HashMap<>();
-        map.put("Content-Type", "application/x-www-form-urlencoded");
-        String params = createParams(bodyArgs);
-        return doRequest(httpUrl, METHOD_POST, map, params, 3000,"UTF-8");
+    protected HttpHelper(String httpUrl, String httpMethod) {
+        this.url = httpUrl;
+        this.method = httpMethod;
+    }
+
+    public int getResponseCode() {
+        if (responseCode == -1) {
+            throw new IllegalStateException("connection not open yet");
+        }
+        return responseCode;
+    }
+
+    public HttpHelper connectTimeout(int timeout) {
+        this.connectTimeout = timeout;
+        return this;
+    }
+
+    public HttpHelper readTimeout(int timeout) {
+        this.readTimeout = timeout;
+        return this;
     }
 
 
-    public static String doPostJson(String httpUrl, String json) {
-        HashMap<String, String> map = new HashMap<>();
-        map.put("Content-Type", "application/json;charset=UTF-8");
-        map.put("accept", "application/json");
-        return doRequest(httpUrl, METHOD_POST, map, json, 3000,"UTF-8");
+    public HttpHelper charset(Charset charset) {
+        this.charset = charset;
+        return this;
+    }
+
+    public HttpHelper header(String key, String value) {
+        header.put(key, value);
+        return this;
+    }
+
+    public HttpHelper header(Map<String, String> params) {
+        header.putAll(params);
+        return this;
+    }
+
+    public HttpHelper queryParam(String key, String value) {
+        queryParams.put(key, value);
+        return this;
+    }
+
+    public HttpHelper queryParam(Map<String, String> params) {
+        queryParams.putAll(params);
+        return this;
+    }
+
+    public HttpHelper formParam(String key, String value) {
+        if (body != null) {
+            throw new IllegalStateException("form and request body cannot be set at the same time");
+        }
+        formParams.put(key, value);
+        return this;
+    }
+
+    public HttpHelper formParam(Map<String, String> params) {
+        if (body != null) {
+            throw new IllegalStateException("form and request body cannot be set at the same time");
+        }
+        formParams.putAll(params);
+        return this;
+    }
+
+    public HttpHelper bodyParam(String json) {
+        if (!formParams.isEmpty()) {
+            throw new IllegalStateException("form and request body cannot be set at the same time");
+        }
+        body = json;
+        return this;
     }
 
 
-    private static String doRequest(String httpUrl, String method, Map<?, ?> HeaderMap, String body, int timeOut, String charset) {
+    @SneakyThrows
+    protected void execute(Consumer<HttpURLConnection> consumer) {
+        if (executed) {
+            throw new IllegalStateException("request has been executed");
+        } else {
+            executed = true;
+        }
         HttpURLConnection connection = null;
         try {
-            URL url = new URL(httpUrl);
+            String url = this.url;
+            // 路径参数
+            if (!queryParams.isEmpty()) {
+                if (!url.contains("?")) {
+                    url += "?" + formatQueryParams(queryParams);
+                } else {
+                    if (url.endsWith("&")) {
+                        url += "&";
+                    }
+                    url += formatQueryParams(queryParams);
+                }
+            }
+            // form参数
+            if (!formParams.isEmpty()) {
+                body = formatQueryParams(formParams);
+            }
             // 通过远程url连接对象打开连接
-            connection = (HttpURLConnection) url.openConnection();
+            connection = (HttpURLConnection) new URL(url).openConnection();
             // 设置连接请求方式
             connection.setRequestMethod(method);
-            // 设置超时时间： 毫秒
-            connection.setConnectTimeout(timeOut);
-
-            // 默认值为：false，当向远程服务器传送数据/写数据时，需要设置为true
-            connection.setDoOutput(true);
-            // 默认值为：true，当前向远程服务读取数据时，设置为true，该参数可有可无
-            connection.setDoInput(true);
+            // 设置连接超时时间, 毫秒
+            connection.setConnectTimeout(connectTimeout);
+            // 设置读取超时时间, 毫秒
+            connection.setReadTimeout(readTimeout);
 
             // 设置传入参数的格式(Content-Type等):请求参数应该是 name1=value1&name2=value2 的形式。
-            if (HeaderMap != null && !HeaderMap.isEmpty()) {
-                for (Map.Entry<?, ?> entry : HeaderMap.entrySet()) {
+            if (header != null && !header.isEmpty()) {
+                for (Map.Entry<?, ?> entry : header.entrySet()) {
                     connection.setRequestProperty(entry.getKey().toString(), entry.getValue().toString());
                 }
             }
-
-            // 通过连接对象获取一个输出流
-            if (body == null) {
-                body = "";
-            }
-            try (OutputStream os = connection.getOutputStream();) {
-                // 通过输出流对象将参数写出去/传输出去,它是通过字节数组写出的
-                os.write(body.getBytes());
-                // 通过连接对象获取一个输入流，向远程读取
-                if (connection.getResponseCode() == 200) {
-                    // 封装输入流is，并指定字符集
-                    try (InputStream is = connection.getInputStream();
-                         BufferedReader br = new BufferedReader(new InputStreamReader(is, charset))
-                    ) {
-                        StringBuilder sbf = new StringBuilder();
-                        String temp;
-                        while ((temp = br.readLine()) != null) {
-                            sbf.append(temp);
-                            sbf.append("\r\n");
-                        }
-                        return sbf.toString();
-                    }
-                } else {
-                    String message = "http: server response failed , \ncode:" + connection.getResponseCode() + "\nmessage:" + connection.getResponseMessage();
-                    throw new RuntimeException(message);
+            // 默认值为：true，当前向远程服务读取数据时，设置为true，该参数可有可无
+            connection.setDoInput(true);
+            if (body != null) {
+                // 默认值为：false，当向远程服务器传送数据/写数据时，需要设置为true
+                connection.setDoOutput(true);
+                try (OutputStream os = connection.getOutputStream()) {
+                    // 通过输出流对象将参数写出去/传输出去,它是通过字节数组写出的
+                    os.write(body.getBytes());
+                    // 通过连接对象获取一个输入流，向远程读取
                 }
             }
+            log.debug("request url:{}, body:{}", url, body);
+            connection.getResponseCode();
+            consumer.accept(connection);
         } catch (IOException e) {
-            e.printStackTrace();
-            throw new RuntimeException(e.getMessage());
+            log.error("request execute failed:", e);
+            throw new IllegalStateException(e);
         } finally {
-            // 关闭资源
             if (connection != null) {
-                connection.disconnect();// 关闭远程连接
+                connection.disconnect();
             }
         }
     }
 
+    protected void responseStream(Consumer<InputStream> consumer) {
+        execute(connection -> {
+            try (InputStream inputStream = connection.getInputStream();) {
+                consumer.accept(inputStream);
+            } catch (Exception e) {
+                log.error("get inputStream failed:", e);
+                throw new IllegalStateException(e);
+            }
+        });
+    }
+
+    public String responseString(Charset charset) {
+        StringBuilder sb = new StringBuilder();
+        responseStream(is -> {
+            try (
+                    InputStreamReader isr = new InputStreamReader(is, charset);
+                    BufferedReader br = new BufferedReader(isr);
+            ) {
+                String temp;
+                while ((temp = br.readLine()) != null) {
+                    sb.append(temp);
+                    sb.append("\r\n");
+                }
+            } catch (Exception e) {
+                log.error("convert to string failed:", e);
+                throw new IllegalStateException(e);
+            }
+        });
+        return sb.toString();
+    }
+
+    public String responseString() {
+        return responseString(charset);
+    }
+
+    public static void main(String[] args) {
+        HttpHelper http = HttpHelper.get("http://127.0.0.1/limit/entity");
+        http.header("Accept", "application/xml;charset=UTF-8");
+        http.queryParam("age","1");
+        http.readTimeout(2000);
+        String s = http.responseString();
+        System.out.println(s);
+    }
 
 }

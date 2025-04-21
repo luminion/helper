@@ -1,12 +1,32 @@
 package io.github.bootystar.helper.base.map;
 
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
 import java.util.Arrays;
 
 /**
  * 地图工具
  * @author bootystar
  */
+@SuppressWarnings("unused")
 public abstract class MapHelper {
+
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class Point {
+        /**
+         * 经度
+         */
+        private double longitude;
+        /**
+         * 纬度
+         */
+        private double latitude;
+    }
 
     /**
      * 地球半径,单位 km
@@ -76,7 +96,7 @@ public abstract class MapHelper {
             }
         }
 
-        /**
+        /*
          * 基本思想是利用X轴射线法，计算射线与多边形各边的交点，如果是偶数，则点在多边形外，否则在多边形内。还会考虑一些特殊情况，如点在多边形顶点上
          * ， 点在多边形边上等特殊情况。
          */

@@ -4,6 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.math.BigDecimal;
 import java.util.Arrays;
 
 /**
@@ -16,7 +17,6 @@ public abstract class MapHelper {
 
     @Data
     @NoArgsConstructor
-    @AllArgsConstructor
     public static class Point {
         /**
          * 经度
@@ -26,22 +26,46 @@ public abstract class MapHelper {
          * 纬度
          */
         private double latitude;
+        
+        public Point(double longitude, double latitude) {
+            this.longitude = longitude;
+            this.latitude = latitude;
+        }
+        
+        public Point(String longitude, String latitude) {
+            this.longitude = Double.parseDouble(longitude);
+            this.latitude = Double.parseDouble(latitude);
+        }
+        
+        public Point(BigDecimal longitude, BigDecimal latitude) {
+            this.longitude = longitude.doubleValue();
+            this.latitude = latitude.doubleValue();
+        }
     }
 
-    /**
-     * 地球半径,单位 km
-     */
-    private static final double EARTH_RADIUS = 6378.137;
+   
+
 
     /**
-     * 获取距离(米)
+     * 获取距离米
      *
      * @param point1 point1
      * @param point2 point2
-     * @return 距离(米)
+     * @return double
+     */
+    public static double getDistanceMeters(Point point1, Point point2) {
+        return getDistanceKilometer(point1, point2) * 1000;
+    }
+    
+    /**
+     * 获取距离(千米)
+     *
+     * @param point1 point1
+     * @param point2 point2
+     * @return 距离(千米)
      * @author bootystar
      */
-    public static double getDistance(Point point1, Point point2) {
+    public static double getDistanceKilometer(Point point1, Point point2) {
         double longitude1 = point1.getLongitude();
         double latitude1 = point1.getLatitude();
         double longitude2 = point2.getLongitude();
@@ -60,10 +84,9 @@ public abstract class MapHelper {
         double b = userLongitude - longitude;
         // 计算两点距离的公式
         double s = 2 * Math.asin(Math.sqrt(Math.pow(Math.sin(a / 2), 2) + Math.cos(userLatitude) * Math.cos(latitude) * Math.pow(Math.sin(b / 2), 2)));
-        // 弧长乘地球半径, 返回单位: 千米
-        s = s * EARTH_RADIUS;
-        // 返回单位: 米
-        return s/1000;
+        // 弧长乘地球半径, 返回单位: 千米, 地球半径,单位 km
+        s = s * 6378.137;
+        return s;
     }
 
 

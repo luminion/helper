@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 /**
@@ -64,12 +65,12 @@ public class TreeHelper<T, R> {
     /**
      * 构建根目录树
      *
-     * @param elements 元素
+     * @param elements  元素
+     * @param predicate 根目录元素过滤规则
      * @return {@link List }<{@link T }>
-     * @author bootystar
      */
-    public List<T> treeRoot(Collection<? extends T> elements) {
-        return buildRelation(elements).stream().filter(e -> parentIdGetter.apply(e) == null).collect(Collectors.toList());
+    public List<T> treeRoot(Collection<? extends T> elements, Predicate<? super T> predicate) {
+        return buildRelation(elements).stream().filter(predicate).collect(Collectors.toList());
     }
 
     /**

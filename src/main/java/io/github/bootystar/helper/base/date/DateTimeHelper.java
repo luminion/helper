@@ -12,7 +12,7 @@ public class DateTimeHelper {
     private final ZonedDateTime zonedDateTime;
     
     public static DateTimeHelper of() {
-        return new DateTimeHelper();
+        return new DateTimeHelper(ZonedDateTime.now());
     }
 
     public static DateTimeHelper of(LocalDateTime localDateTime) {
@@ -37,10 +37,6 @@ public class DateTimeHelper {
 
     public static DateTimeHelper ofEpochMilli(long epochMilli) {
         return new DateTimeHelper(ZonedDateTime.ofInstant(new Date(epochMilli).toInstant(), ZoneId.systemDefault()));
-    }
-
-    public DateTimeHelper() {
-        this.zonedDateTime = ZonedDateTime.now();
     }
 
     public DateTimeHelper(ZonedDateTime zonedDateTime) {

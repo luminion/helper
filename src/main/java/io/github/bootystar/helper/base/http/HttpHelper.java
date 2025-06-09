@@ -13,7 +13,7 @@ import java.util.Map;
 import java.util.function.Consumer;
 
 /**
- * http请求工具类
+ * http请求助手
  *
  * @author bootystar
  */

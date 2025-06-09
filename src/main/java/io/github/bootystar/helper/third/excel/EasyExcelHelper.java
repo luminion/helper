@@ -23,22 +23,10 @@ import java.time.format.DateTimeFormatter;
  * @author bootystar
  */
 @Slf4j
-public abstract class ExcelHelper extends EasyExcel {
+public abstract class EasyExcelHelper extends EasyExcel {
     private static final String WRITE_METHOD = "putWriteConverter";
     private static final String ALL_METHOD = "putAllConverter";
     private static volatile boolean isRegistered = false;
-//    static {
-//        addConverters(
-//                new LocalDateConverter(),
-//                new LocalDateTimeConverter(),
-//                new LocalTimeConverter(),
-//                new TimeConverter(),
-//                new TimestampConverter(),
-//                new LongConverter(),
-//                new DoubleConverter(),
-//                new BooleanConverter()
-//        );
-//    }
 
     public static void registerExtraConverters() {
         if (isRegistered){

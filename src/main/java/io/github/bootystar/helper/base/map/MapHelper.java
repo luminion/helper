@@ -14,7 +14,6 @@ import java.util.Arrays;
 @SuppressWarnings("unused")
 public abstract class MapHelper {
 
-
     @Data
     @NoArgsConstructor
     public static class Point {
@@ -43,9 +42,6 @@ public abstract class MapHelper {
         }
     }
 
-   
-
-
     /**
      * 获取距离米
      *
@@ -63,7 +59,6 @@ public abstract class MapHelper {
      * @param point1 point1
      * @param point2 point2
      * @return 距离(千米)
-     * @author bootystar
      */
     public static double getDistanceKilometer(Point point1, Point point2) {
         double longitude1 = point1.getLongitude();
@@ -97,7 +92,6 @@ public abstract class MapHelper {
      * @param boundaryPoints 边界点
      * @return boolean
      * @link <a href="https://blog.csdn.net/zheng12tian/article/details/40617445">...</a>
-     * @author bootystar
      */
     public static boolean isPointInPolygon(Point point, Point[] boundaryPoints) {
         // 防止第一个点与最后一个点相同
@@ -143,7 +137,7 @@ public abstract class MapHelper {
                 point1 = point2;
                 continue;
             }
-            /**
+            /* 
              * 此处判断射线与边相交
              */
             if (point.getLatitude() > Math.min(point1.getLatitude(), point2.getLatitude())
@@ -186,7 +180,7 @@ public abstract class MapHelper {
                         return true;
                     }
                 }
-                /**
+                /* 
                  * 判断点通过多边形顶点
                  */
                 if (((point.getLatitude() == point1.getLatitude() && point.getLongitude() < point1.getLongitude()))
@@ -235,7 +229,6 @@ public abstract class MapHelper {
      * @param point          点
      * @param boundaryPoints 边界点
      * @return boolean
-     * @author bootystar
      */
     private static boolean isPointInRectangle(Point point, Point[] boundaryPoints) {
         // 西南角点
@@ -252,7 +245,6 @@ public abstract class MapHelper {
      *
      * @param vertexes 顶点
      * @return {@link Point }
-     * @author bootystar
      */
     private static Point getSouthWestPoint(Point[] vertexes) {
         double minLng = vertexes[0].getLongitude(), minLat = vertexes[0].getLatitude();
@@ -274,7 +266,6 @@ public abstract class MapHelper {
      *
      * @param vertexes 顶点
      * @return {@link Point }
-     * @author bootystar
      */
     private static Point getNorthEastPoint(Point[] vertexes) {
         double maxLng = 0.0d, maxLat = 0.0d;

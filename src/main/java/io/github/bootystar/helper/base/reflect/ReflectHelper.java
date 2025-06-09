@@ -1,5 +1,6 @@
 package io.github.bootystar.helper.base.reflect;
 
+import com.google.common.base.Objects;
 import lombok.SneakyThrows;
 
 import java.lang.reflect.Field;
@@ -10,6 +11,8 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
+ * 反射帮手
+ *
  * @author bootystar
  */
 public abstract class ReflectHelper {
@@ -20,9 +23,8 @@ public abstract class ReflectHelper {
     /**
      * 是否为java自带的核心类
      *
-     * @param clazz 克拉兹
+     * @param clazz 类
      * @return boolean
-     * @author bootystar
      */
     public static boolean isJavaCoreClass(Class<?> clazz) {
         if (clazz == null) {
@@ -34,9 +36,8 @@ public abstract class ReflectHelper {
     /**
      * 新建实例
      *
-     * @param clazz 克拉兹
-     * @return {@link T }
-     * @author bootystar
+     * @param clazz 类
+     * @return 类实例
      */
     @SneakyThrows
     public static <T> T newInstance(Class<T> clazz) {
@@ -47,8 +48,7 @@ public abstract class ReflectHelper {
      * 指定类属性map
      *
      * @param clazz 类
-     * @return {@link Map }<{@link String }, {@link Field }>
-     * @author bootystar
+     * @return 属性map
      */
     public static Map<String, Field> fieldMap(Class<?> clazz) {
         if (isJavaCoreClass(clazz)) {
@@ -79,7 +79,6 @@ public abstract class ReflectHelper {
      *
      * @param modifiers 修饰符
      * @return boolean
-     * @author bootystar
      */
     public static boolean isSpecialModifier(int modifiers) {
         return Modifier.isStatic(modifiers)
@@ -96,8 +95,7 @@ public abstract class ReflectHelper {
      *
      * @param source 来源
      * @param target 目标
-     * @return {@link T }
-     * @author bootystar
+     * @return 目标对象
      */
     @SneakyThrows
     public static <T> T copyFieldProperties(Object source, T target) {
@@ -120,8 +118,7 @@ public abstract class ReflectHelper {
      * 对象转map
      *
      * @param source 来源
-     * @return {@link Map }<{@link ? }, {@link ? }>
-     * @author bootystar
+     * @return {@link Map }
      */
     @SneakyThrows
     public static Map<?, ?> objectToMap(Object source) {
@@ -142,8 +139,6 @@ public abstract class ReflectHelper {
      *
      * @param source 来源
      * @param clazz  目标类
-     * @return {@link T }
-     * @author bootystar
      */
     public static <T> T toTarget(Object source, Class<T> clazz) {
         return copyFieldProperties(source, newInstance(clazz));
@@ -155,28 +150,25 @@ public abstract class ReflectHelper {
      *
      * @param source 来源
      * @param target 目标
-     * @return {@link T }
-     * @author bootystar
+     * @return 差异属性对象, 若相同, 返回null
      */
     @SneakyThrows
+    @SuppressWarnings("unchecked")
     public static <T> T toDifference(T source, T target) {
         if (source == null || target == null || source.equals(target)) {
             return null;
         }
         Class<T> clazz = (Class<T>) source.getClass();
         Map<String, Field> fieldMap = fieldMap(clazz);
-        T instance = null;
+        T instance = newInstance(clazz);
         Collection<Field> values = fieldMap.values();
         for (Field field : values) {
             Object o = field.get(source);
-            if (o == null) continue;
             Object o1 = field.get(target);
-            if (!o.equals(o1)) {
-                if (instance == null) {
-                    instance = newInstance(clazz);
-                }
-                field.set(instance, o);
+            if (Objects.equal(o,o1)) {
+                continue;
             }
+            field.set(instance, o);
         }
         return instance;
     }

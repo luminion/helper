@@ -11,7 +11,6 @@ import java.nio.channels.FileChannel;
 /**
  * 文件操作工具
  * @author bootystar
- *
  */
 @Slf4j
 public abstract class FileHelper {
@@ -21,23 +20,22 @@ public abstract class FileHelper {
      * 删除目标文件夹内及其子文件夹所有指定文件
      *
      * @param source 目标文件夹
-     * @param delete 需要删除的文件名
-     * @author bootystar
+     * @param pattern 需要删除的文件, 匹配的正则表达式
      */
-    public static void deleteTargetFile(File source, String delete) {
-        if (source==null || delete==null || delete.equals("")){
+    public static void deleteFileByPattern(File source, String pattern) {
+        if (source==null || pattern==null || pattern.equals("")){
             throw new RuntimeException("源文件或目标不合法");
         }
         if (source.isDirectory()) {
             File[] files = source.listFiles();
             if (files != null) {
                 for (File child : files) {
-                    deleteTargetFile(child, delete);
+                    deleteFileByPattern(child, pattern);
                 }
             }
         } else {
             String name = source.getName();
-            if (name.equals(delete)) {
+            if (name.matches(pattern)) {
                 log.debug("删除文件：{}", source.getAbsolutePath());
                 source.delete();
             }
@@ -48,7 +46,6 @@ public abstract class FileHelper {
      * 删除目标文件及文件夹内所有文件
      *
      * @param target 目标文件
-     * @author bootystar
      */
     public static void deleteFile(File target) {
         if (target==null){
@@ -71,7 +68,6 @@ public abstract class FileHelper {
      *
      * @param source 源文件
      * @param dest   输出文件
-     * @author bootystar
      */
     private static void copyFile(File source, File dest) {
         if (source==null ||source.isDirectory() || dest==null ||dest.isDirectory()){
@@ -94,7 +90,6 @@ public abstract class FileHelper {
      *
      * @param sourceDir 源文件夹
      * @param destDir   输出文件夹
-     * @author bootystar
      */
     public static void copyDir(File sourceDir, File destDir) {
         if (sourceDir==null || !sourceDir.isDirectory() ||destDir==null || !destDir.isDirectory() ) {

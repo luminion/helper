@@ -9,11 +9,14 @@ import java.time.format.DateTimeFormatter;
 import java.util.Date;
 
 /**
- * 日期操作工具
+ * 时间日期助手
  *
  * @author bootystar
  */
-public abstract class DateHelper {
+public class DateTimeHelper {
+    private Date date;
+    private ZoneId zoneId;
+
 
     /**
      * 格式化
@@ -43,7 +46,6 @@ public abstract class DateHelper {
      *
      * @param source 来源
      * @return {@link String }
-     * @author bootystar
      */
     public static String fillDateTimeString(String source) {
         if (source == null) {
@@ -78,7 +80,6 @@ public abstract class DateHelper {
      *
      * @param source 来源
      * @return {@link String }
-     * @author bootystar
      */
     public static String fillDateString(String source) {
         if (source == null) {
@@ -103,7 +104,6 @@ public abstract class DateHelper {
      *
      * @param source 来源
      * @return {@link String }
-     * @author bootystar
      */
     public static String fillTimeString(String source) {
         if (source == null) {
@@ -128,7 +128,6 @@ public abstract class DateHelper {
      * SimpleDateFormat有线程安全的问题, 每次调用都创建新对象避免线程问题
      *
      * @return {@link SimpleDateFormat }
-     * @author bootystar
      */
     public static SimpleDateFormat newSimpleDateFormat() {
         return new SimpleDateFormat(DATE_TIME_EXPRESSION);
@@ -142,7 +141,6 @@ public abstract class DateHelper {
      *
      * @param source 来源
      * @return {@link Date }
-     * @author bootystar
      */
     @SneakyThrows
     public static Date string2Date(String source) {
@@ -158,7 +156,6 @@ public abstract class DateHelper {
      * @param source  要转化的字符串
      * @param pattern 格式
      * @return {@link Date }
-     * @author bootystar
      */
     public static Date string2Date(String source, String pattern) {
         try {
@@ -175,7 +172,6 @@ public abstract class DateHelper {
      *
      * @param source 来源
      * @return {@link LocalDateTime }
-     * @author bootystar
      */
     public static LocalDateTime string2LocalDateTime(String source) {
         if (source == null) return null;
@@ -189,7 +185,6 @@ public abstract class DateHelper {
      * @param source  来源
      * @param pattern 图案
      * @return {@link LocalDateTime }
-     * @author bootystar
      */
     public static LocalDateTime string2LocalDateTime(String source, String pattern) {
         if (source == null) return null;
@@ -201,7 +196,6 @@ public abstract class DateHelper {
      *
      * @param source 来源
      * @return {@link LocalDate }
-     * @author bootystar
      */
     public static LocalDate string2LocalDate(String source) {
         if (source == null) return null;
@@ -215,7 +209,6 @@ public abstract class DateHelper {
      * @param source  来源
      * @param pattern 图案
      * @return {@link LocalDate }
-     * @author bootystar
      */
     public static LocalDate string2LocalDate(String source, String pattern) {
         if (source == null) return null;
@@ -227,7 +220,6 @@ public abstract class DateHelper {
      *
      * @param source 来源
      * @return {@link LocalTime }
-     * @author bootystar
      */
     public static LocalTime string2LocalTime(String source) {
         if (source == null) return null;
@@ -241,7 +233,6 @@ public abstract class DateHelper {
      * @param source  来源
      * @param pattern 图案
      * @return {@link LocalTime }
-     * @author bootystar
      */
     public static LocalTime string2LocalTime(String source, String pattern) {
         if (source == null) return null;
@@ -254,7 +245,6 @@ public abstract class DateHelper {
      *
      * @param date 日期
      * @return {@link LocalDate }
-     * @author bootystar
      */
     public static LocalDate date2LocalDate(Date date) {
         return date.toInstant().atZone(ZONE_ID).toLocalDate();
@@ -266,7 +256,6 @@ public abstract class DateHelper {
      * @param date   日期
      * @param zoneId 时区id
      * @return {@link LocalDate }
-     * @author bootystar
      */
     public static LocalDate date2LocalDate(Date date, ZoneId zoneId) {
         return date.toInstant().atZone(zoneId).toLocalDate();
@@ -277,7 +266,6 @@ public abstract class DateHelper {
      *
      * @param date 日期
      * @return {@link LocalTime }
-     * @author bootystar
      */
     public static LocalTime date2DateTime(Date date) {
         return date.toInstant().atZone(ZONE_ID).toLocalTime();
@@ -289,7 +277,6 @@ public abstract class DateHelper {
      * @param date   日期
      * @param zoneId 时区id
      * @return {@link LocalTime }
-     * @author bootystar
      */
     public static LocalTime date2DateTime(Date date, ZoneId zoneId) {
         return date.toInstant().atZone(zoneId).toLocalTime();
@@ -300,7 +287,6 @@ public abstract class DateHelper {
      *
      * @param date 日期
      * @return {@link LocalDateTime }
-     * @author bootystar
      */
     public static LocalDateTime date2LocalDateTime(Date date) {
         return date.toInstant().atZone(ZONE_ID).toLocalDateTime();
@@ -312,7 +298,6 @@ public abstract class DateHelper {
      * @param date   日期
      * @param zoneId 时区id
      * @return {@link LocalDateTime }
-     * @author bootystar
      */
     public static LocalDateTime date2LocalDateTime(Date date, ZoneId zoneId) {
         return date.toInstant().atZone(zoneId).toLocalDateTime();
@@ -323,7 +308,6 @@ public abstract class DateHelper {
      *
      * @param local 本地
      * @return {@link Date }
-     * @author bootystar
      */
     public static Date localDateTime2Date(LocalDateTime local) {
         ZonedDateTime zdt = local.atZone(ZONE_ID);
@@ -335,7 +319,6 @@ public abstract class DateHelper {
      *
      * @param local 本地
      * @return 指定时间+今日日期拼接的Date
-     * @author bootystar
      */
     public static Date localTime2Date(LocalTime local) {
         LocalDate localDate = LocalDate.now();
@@ -349,7 +332,6 @@ public abstract class DateHelper {
      *
      * @param local 本地
      * @return 今日日期0时0分0秒对应的Date
-     * @author bootystar
      */
     public static Date localDate2Date(LocalDate local) {
         ZonedDateTime zdt = local.atStartOfDay(ZONE_ID);

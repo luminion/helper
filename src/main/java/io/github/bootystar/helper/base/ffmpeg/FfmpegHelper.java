@@ -14,6 +14,11 @@ import java.util.regex.Pattern;
 import static java.time.temporal.ChronoUnit.*;
 
 
+/**
+ * ffmpeg助手
+ *
+ * @author bootystar
+ */
 @Slf4j
 public class FfmpegHelper {
     private final String ffplay;
@@ -29,7 +34,6 @@ public class FfmpegHelper {
      * @param ffmpeg        ffmpeg可执行文件路径
      * @param ffprobe       ffprobe可执行文件路径
      * @param tempMediaPath 临时文件保存路径
-     * @author bootystar
      */
     public FfmpegHelper(String ffplay, String ffmpeg, String ffprobe, String tempMediaPath) {
         this.ffplay = ffplay;
@@ -47,7 +51,6 @@ public class FfmpegHelper {
      *
      * @param command 命令行参数
      * @return {@link String } 执行结果
-     * @author bootystar
      */
     public String commandStart(List<String> command) {
         String join = String.join(" ", command);
@@ -95,7 +98,6 @@ public class FfmpegHelper {
      * 播放音频和视频
      *
      * @param resourcesPath 文件的路径
-     * @author bootystar
      */
     public void playVideoAudio(String resourcesPath) {
         List<String> command = new ArrayList<>();
@@ -114,7 +116,6 @@ public class FfmpegHelper {
      *
      * @param resourcesPath 文件的路径
      * @param loop          循环播放次数
-     * @author bootystar
      */
     public void playVideoAudio(String resourcesPath, int loop) {
         List<String> command = new ArrayList<>();
@@ -137,7 +138,6 @@ public class FfmpegHelper {
      * @param weight        宽度
      * @param height        高度
      * @param loop          循环播放次数
-     * @author bootystar
      */
     public void playVideoAudio(String resourcesPath, int weight, int height, int loop) {
         List<String> command = new ArrayList<>();
@@ -162,7 +162,6 @@ public class FfmpegHelper {
      *
      * @param videoResourcesPath 视频文件的路径
      * @param saveFilePath       保存文件路径
-     * @author bootystar
      */
     public void getAudioFromVideo(String videoResourcesPath,String saveFilePath) {
         removeExisted(saveFilePath);
@@ -179,7 +178,6 @@ public class FfmpegHelper {
      *
      * @param videoResourcesPath 视频文件的路径
      * @param saveFilePath       保存文件路径
-     * @author bootystar
      */
     public void getVideoFromAudio(String videoResourcesPath,String saveFilePath) {
         removeExisted(saveFilePath);
@@ -202,7 +200,6 @@ public class FfmpegHelper {
      * @param videoResourcesPath 视频文件的路径
      * @param audioResourcesPath 音频文件的路径
      * @param saveFilePath       保存文件路径
-     * @author bootystar
      */
     public void mergeSilentVideoAudio(String videoResourcesPath, String audioResourcesPath, String saveFilePath) {
         removeExisted(saveFilePath);
@@ -229,7 +226,6 @@ public class FfmpegHelper {
      * @param videoResourcesPath 视频文件的路径
      * @param audioResourcesPath 音频文件的路径
      * @param saveFilePath       保存文件路径
-     * @author bootystar
      */
     public void mergeVideoAudio(String videoResourcesPath, String audioResourcesPath, String saveFilePath) {
         removeExisted(saveFilePath);
@@ -259,7 +255,6 @@ public class FfmpegHelper {
      *
      * @param videoResourcesPathList 视频文件路径的List
      * @param saveFilePath           保存文件路径
-     * @author bootystar
      */
     public void mergeVideosUnstable(List<String> videoResourcesPathList, String saveFilePath) {
         removeExisted(saveFilePath);
@@ -306,7 +301,6 @@ public class FfmpegHelper {
      *
      * @param videoResourcesPathList 视频文件路径的List
      * @param saveFilePath           保存文件路径
-     * @author bootystar
      */
     public void mergeVideos(List<String> videoResourcesPathList,String saveFilePath) {
         removeExisted(saveFilePath);
@@ -346,7 +340,6 @@ public class FfmpegHelper {
      *
      * @param audioResourcesPathList 音频文件路径的List
      * @param saveFilePath           保存文件路径
-     * @author bootystar
      */
     public void mergeAudios(List<String> audioResourcesPathList, String saveFilePath) {
         removeExisted(saveFilePath);
@@ -375,7 +368,6 @@ public class FfmpegHelper {
      *
      * @param videoResourcesPath 视频文件的路径
      * @param saveFilePath       保存文件路径(例如转化为mp4格式，saveFilePath为"e:/test.mp4",转化为avi,saveFilePath为"e:/test.avi")
-     * @author bootystar
      */
     public void videoFormatConversion(String videoResourcesPath,String saveFilePath) {
         removeExisted(saveFilePath);
@@ -456,7 +448,6 @@ public class FfmpegHelper {
      * @param startTime               开始时间
      * @param endTime                 结束时间
      * @param saveFilePath            保存文件路径
-     * @author bootystar
      */
     public void cutVideoAudio(String videoAudioResourcesPath, LocalTime startTime, LocalTime endTime, String saveFilePath) {
         removeExisted(saveFilePath);
@@ -493,7 +484,6 @@ public class FfmpegHelper {
      * @param leftDistance            开始裁剪的视频左边到y轴的距离（视频左下角为原点）
      * @param topDistance             开始裁剪的视频上边到x轴的距离（视频左下角为原点）
      * @param saveFilePath            保存文件路径
-     * @author bootystar
      */
     public void cropVideoSize(String videoAudioResourcesPath, String finallyWidth, String finallyHeight, String leftDistance, String topDistance,String saveFilePath) {
         removeExisted(saveFilePath);
@@ -542,7 +532,6 @@ public class FfmpegHelper {
      * @param videoResourcesPath 视频文件的路径
      * @param screenshotTime     截图的时间，如：00:01:06
      * @param saveFilePath       保存文件路径
-     * @author bootystar
      */
     public void videoScreenshot(String videoResourcesPath, LocalTime screenshotTime, String saveFilePath) {
         removeExisted(saveFilePath);
@@ -565,7 +554,6 @@ public class FfmpegHelper {
      * @param videoResourcesPath 视频文件的路径
      * @param fps                截图的速度。1则表示每秒截一张；0.1则表示每十秒一张；10则表示每秒截十张图片
      * @param targetFileDirPath  文件保存的目标文件夹
-     * @author bootystar
      */
     public void videoAllScreenshot(String videoResourcesPath, String fps,String targetFileDirPath) {
         List<String> command = new ArrayList<>();
@@ -587,7 +575,6 @@ public class FfmpegHelper {
      * @param audioResourcesPath   音频文件的路径
      * @param fps                  帧率,每张图片的播放时间（数值越小则每张图停留的越长）。0.5则两秒播放一张，1则一秒播放一张，10则一秒播放十张
      * @param saveFilePath         保存文件路径
-     * @author bootystar
      */
     public void pictureAudioMerge(String pictureResourcesPath, String audioResourcesPath,String fps,String saveFilePath) {
         removeExisted(saveFilePath);
@@ -617,7 +604,6 @@ public class FfmpegHelper {
      *
      * @param audioResourcesPath 音频文件的路径
      * @param saveFilePath       保存文件路径
-     * @author bootystar
      */
     public void audioWaveform(String audioResourcesPath, String saveFilePath) {
         removeExisted(saveFilePath);
@@ -643,7 +629,6 @@ public class FfmpegHelper {
      * @param audioResourcesPath1 音频2文件路径的
      * @param audioResourcesPath2 音频资源path2
      * @param saveFilePath        保存文件路径
-     * @author bootystar
      */
     public void mergeAudios(String audioResourcesPath1, String audioResourcesPath2, String saveFilePath) {
         removeExisted(saveFilePath);
@@ -668,7 +653,6 @@ public class FfmpegHelper {
      * @param audioResourcesPath2 音频2文件路径
      * @param number2             音频2的音量，如取 0.4 表示音量是原来的40%  ，取1.5表示音量是原来的150%
      * @param saveFilePath        保存文件路径
-     * @author bootystar
      */
     public void mergeAudios(String audioResourcesPath1,String number1, String audioResourcesPath2,String number2, String saveFilePath) {
         removeExisted(saveFilePath);
@@ -691,7 +675,6 @@ public class FfmpegHelper {
      * @param audioResourcesPath1 音频1文件路径
      * @param audioResourcesPath2 音频2文件路径
      * @param saveFilePath        保存文件路径
-     * @author bootystar
      */
     public void mergeAudiosSoundtrack(String audioResourcesPath1, String audioResourcesPath2,String saveFilePath) {
         removeExisted(saveFilePath);

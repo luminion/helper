@@ -4,6 +4,7 @@ import com.google.common.base.Objects;
 import lombok.SneakyThrows;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.Collection;
 import java.util.HashMap;
@@ -173,5 +174,17 @@ public abstract class ReflectHelper {
         return instance;
     }
 
+    /**
+     * 调用公共方法
+     *
+     * @param target     目标
+     * @param methodName 方法名称
+     * @param args       args
+     * @return {@link Object }
+     */
+    @SneakyThrows
+    public static Object invokePublicMethod(Object target, String methodName, Object... args){
+        return target.getClass().getMethod(methodName).invoke(target, args);
+    }
 
 }

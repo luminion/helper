@@ -67,4 +67,8 @@ public class DateTimeHelper {
         return zonedDateTime.toInstant().toEpochMilli();
     }
 
+    @Override
+    public String toString() {
+        return toLocalDateTime().toString();
+    }
 }

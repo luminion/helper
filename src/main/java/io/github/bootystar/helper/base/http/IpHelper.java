@@ -13,30 +13,8 @@ import java.util.Enumeration;
  */
 @Slf4j
 public class IpHelper {
-    private static final String UNKNOWN = "unknown";
-
+    public static final String UNKNOWN = "unknown";
     public static final String LOCALHOST = "127.0.0.1";
-
-
-    /**
-     * 获取请求的ip地址
-     *
-     * @param request 请求
-     * @return {@link String }
-     */
-    public static String getRequestIpAddr(jakarta.servlet.http.HttpServletRequest request) {
-        return getRequestIpaddr(request.getHeader("x-forwarded-for"), request.getHeader("Proxy-Client-IP"), request.getHeader("WL-Proxy-Client-IP"), request.getRemoteAddr());
-    }
-
-    /**
-     * 获取请求的ip地址
-     *
-     * @param request 请求
-     * @return {@link String }
-     */
-    public static String getRequestIpAddr(javax.servlet.http.HttpServletRequest request) {
-        return getRequestIpaddr(request.getHeader("x-forwarded-for"), request.getHeader("Proxy-Client-IP"), request.getHeader("WL-Proxy-Client-IP"), request.getRemoteAddr());
-    }
 
     /**
      * 获取请求的ip地址
@@ -47,7 +25,7 @@ public class IpHelper {
      * @param remoteAddr request.getRemoteAddr()
      * @return {@link String }
      */
-    private static String getRequestIpaddr(String header, String header2, String header3, String remoteAddr) {
+    public static String getRequestIpaddr(String header, String header2, String header3, String remoteAddr) {
         String ipAddress;
         try {
             ipAddress = header;

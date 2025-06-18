@@ -1,6 +1,8 @@
 package io.github.bootystar.helper.third.minio;
 
 import io.minio.*;
+import lombok.Getter;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
@@ -10,17 +12,26 @@ import java.io.OutputStream;
 @Slf4j
 public class MinioHelper {
 
+    @Setter
+    @Getter
     protected String defaultBucket = "defaultBucket";
-
-
+    @Setter
+    @Getter
     protected MinioClient minioClient;
 
     public MinioHelper(MinioClient minioClient) {
         this.minioClient = minioClient;
         init();
     }
-    public MinioHelper(MinioClient minioClient, String defaultBucket) {
-        this.minioClient = minioClient;
+
+    public MinioHelper(String endpoint, String accessKey, String secretKey) {
+        this.minioClient = MinioClient.builder().endpoint(endpoint).credentials(accessKey, secretKey).build();
+        this.defaultBucket = defaultBucket;
+        init();
+    }
+
+    public MinioHelper(String endpoint, String accessKey, String secretKey, String defaultBucket) {
+        this.minioClient = MinioClient.builder().endpoint(endpoint).credentials(accessKey, secretKey).build();
         this.defaultBucket = defaultBucket;
         init();
     }
@@ -30,7 +41,6 @@ public class MinioHelper {
             createBucket(defaultBucket);
         }
     }
-
 
     public boolean bucketExists(String bucketName) {
         try {
@@ -63,8 +73,6 @@ public class MinioHelper {
         }
         return false;
     }
-
-
 
     public ObjectWriteResponse upload(String bucketName, String filename, InputStream is) {
         try {

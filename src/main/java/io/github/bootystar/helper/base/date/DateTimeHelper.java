@@ -9,6 +9,7 @@ import java.util.Date;
  * @author bootystar
  */
 public class DateTimeHelper {
+    public static final String PATTERN = "yyyy-MM-dd HH:mm:ss";
     private final ZonedDateTime zonedDateTime;
     
     public static DateTimeHelper of() {

@@ -10,6 +10,7 @@ import java.nio.channels.FileChannel;
 
 /**
  * 文件操作工具
+ *
  * @author bootystar
  */
 @Slf4j
@@ -19,11 +20,11 @@ public abstract class FileHelper {
     /**
      * 删除目标文件夹内及其子文件夹所有指定文件
      *
-     * @param source 目标文件夹
+     * @param source  目标文件夹
      * @param pattern 需要删除的文件, 匹配的正则表达式
      */
     public static void deleteFileByPattern(File source, String pattern) {
-        if (source==null || pattern==null || pattern.equals("")){
+        if (source == null || pattern == null || pattern.isEmpty()) {
             throw new RuntimeException("源文件或目标不合法");
         }
         if (source.isDirectory()) {
@@ -48,8 +49,8 @@ public abstract class FileHelper {
      * @param target 目标文件
      */
     public static void deleteFile(File target) {
-        if (target==null){
-            return ;
+        if (target == null) {
+            return;
         }
         if (target.isDirectory()) {
             File[] files = target.listFiles();
@@ -70,7 +71,7 @@ public abstract class FileHelper {
      * @param dest   输出文件
      */
     private static void copyFile(File source, File dest) {
-        if (source==null ||source.isDirectory() || dest==null ||dest.isDirectory()){
+        if (source == null || source.isDirectory() || dest == null || dest.isDirectory()) {
             throw new IllegalStateException("源文件或目标不合法");
         }
         try (
@@ -92,20 +93,24 @@ public abstract class FileHelper {
      * @param destDir   输出文件夹
      */
     public static void copyDir(File sourceDir, File destDir) {
-        if (sourceDir==null || !sourceDir.isDirectory() ||destDir==null || !destDir.isDirectory() ) {
+        if (sourceDir == null || !sourceDir.isDirectory() || destDir == null || !destDir.isDirectory()) {
             throw new IllegalStateException("源文件或目标不合法");
         }
         if (!destDir.exists()) {
             destDir.mkdirs();
         }
         File[] files = sourceDir.listFiles();
-        for (File f : files) {
-            if (f.isDirectory()) {
-                copyDir(f, new File(destDir.getPath(), f.getName()));
-            } else if (f.isFile()) {
-                copyFile(f, new File(destDir.getPath(), f.getName()));
+        if (files != null) {
+            for (File f : files) {
+                File file = new File(destDir.getPath(), f.getName());
+                if (f.isDirectory()) {
+                    copyDir(f, file);
+                } else if (f.isFile()) {
+                    copyFile(f, file);
+                }
             }
         }
+
     }
 
 }

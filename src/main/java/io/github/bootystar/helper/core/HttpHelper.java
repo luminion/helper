@@ -1,5 +1,6 @@
 package io.github.bootystar.helper.core;
 
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.*;
@@ -142,7 +143,7 @@ public class HttpHelper {
     }
 
 
-    protected void execute(Consumer<HttpURLConnection> consumer) {
+    protected HttpURLConnection execute() {
         if (executed) {
             throw new IllegalStateException("request has been executed");
         } else {
@@ -193,8 +194,7 @@ public class HttpHelper {
                 }
             }
             log.debug("request url:{}, body:{}", url, body);
-            connection.getResponseCode();
-            consumer.accept(connection);
+            return connection;
         } catch (IOException e) {
             log.error("request execute failed:", e);
             throw new IllegalStateException(e);
@@ -205,34 +205,30 @@ public class HttpHelper {
         }
     }
 
-    protected void responseStream(Consumer<InputStream> consumer) {
-        execute(connection -> {
-            try (InputStream inputStream = connection.getInputStream();) {
-                consumer.accept(inputStream);
-            } catch (Exception e) {
-                log.error("get inputStream failed:", e);
-                throw new IllegalStateException(e);
-            }
-        });
+    @SneakyThrows
+    public InputStream responseStream() {
+        HttpURLConnection execute = execute();
+        int code = execute.getResponseCode();
+        if (code != 200) {
+            log.warn("request may execute failed , http code:{},  url:{}, body:{}", code, url, body);
+        }
+        return execute.getInputStream();
     }
 
     public String responseString(Charset charset) {
         StringBuilder sb = new StringBuilder();
-        responseStream(is -> {
-            try (
-                    InputStreamReader isr = new InputStreamReader(is, charset);
-                    BufferedReader br = new BufferedReader(isr);
-            ) {
-                String temp;
-                while ((temp = br.readLine()) != null) {
-                    sb.append(temp);
-                    sb.append("\r\n");
-                }
-            } catch (Exception e) {
-                log.error("convert to string failed:", e);
-                throw new IllegalStateException(e);
+        try (InputStream is = responseStream();
+             InputStreamReader isr = new InputStreamReader(is, charset);
+             BufferedReader br = new BufferedReader(isr)) {
+            String temp;
+            while ((temp = br.readLine()) != null) {
+                sb.append(temp);
+                sb.append("\r\n");
             }
-        });
+        } catch (Exception e) {
+            log.error("convert to string failed:", e);
+            throw new IllegalStateException(e);
+        }
         return sb.toString();
     }
 

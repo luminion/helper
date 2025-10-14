@@ -14,7 +14,7 @@ public class MinioHelper {
 
     @Setter
     @Getter
-    protected String defaultBucket = "default";
+    protected String defaultBucket = "bucket1";
     @Setter
     @Getter
     protected MinioClient minioClient;

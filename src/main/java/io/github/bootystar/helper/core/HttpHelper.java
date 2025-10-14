@@ -11,7 +11,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.function.Consumer;
 
 /**
  * http请求助手
@@ -143,6 +142,7 @@ public class HttpHelper {
     }
 
 
+    @SneakyThrows
     protected HttpURLConnection execute() {
         if (executed) {
             throw new IllegalStateException("request has been executed");
@@ -150,71 +150,72 @@ public class HttpHelper {
             executed = true;
         }
         HttpURLConnection connection = null;
-        try {
-            String url = this.url;
-            // 路径参数
-            if (!queryParams.isEmpty()) {
-                if (!url.contains("?")) {
-                    url += "?" + formatQueryParams(queryParams);
-                } else {
-                    if (url.endsWith("&")) {
-                        url += "&";
-                    }
-                    url += formatQueryParams(queryParams);
-                }
-            }
-            // form参数
-            if (!formParams.isEmpty()) {
-                body = formatQueryParams(formParams);
-            }
-            // 通过远程url连接对象打开连接
-            connection = (HttpURLConnection) new URL(url).openConnection();
-            // 设置连接请求方式
-            connection.setRequestMethod(method);
-            // 设置连接超时时间, 毫秒
-            connection.setConnectTimeout(connectTimeout);
-            // 设置读取超时时间, 毫秒
-            connection.setReadTimeout(readTimeout);
 
-            // 设置传入参数的格式(Content-Type等):请求参数应该是 name1=value1&name2=value2 的形式。
-            if (header != null && !header.isEmpty()) {
-                for (Map.Entry<?, ?> entry : header.entrySet()) {
-                    connection.setRequestProperty(entry.getKey().toString(), entry.getValue().toString());
+        String url = this.url;
+        // 路径参数
+        if (!queryParams.isEmpty()) {
+            if (!url.contains("?")) {
+                url += "?" + formatQueryParams(queryParams);
+            } else {
+                if (url.endsWith("&")) {
+                    url += "&";
                 }
+                url += formatQueryParams(queryParams);
             }
-            // 默认值为：true，当前向远程服务读取数据时，设置为true，该参数可有可无
-            connection.setDoInput(true);
-            if (body != null) {
-                // 默认值为：false，当向远程服务器传送数据/写数据时，需要设置为true
-                connection.setDoOutput(true);
-                try (OutputStream os = connection.getOutputStream()) {
-                    // 通过输出流对象将参数写出去/传输出去,它是通过字节数组写出的
-                    os.write(body.getBytes());
-                    // 通过连接对象获取一个输入流，向远程读取
-                }
+        }
+        // form参数
+        if (!formParams.isEmpty()) {
+            body = formatQueryParams(formParams);
+        }
+        // 通过远程url连接对象打开连接
+        connection = (HttpURLConnection) new URL(url).openConnection();
+        // 设置连接请求方式
+        connection.setRequestMethod(method);
+        // 设置连接超时时间, 毫秒
+        connection.setConnectTimeout(connectTimeout);
+        // 设置读取超时时间, 毫秒
+        connection.setReadTimeout(readTimeout);
+
+        // 设置传入参数的格式(Content-Type等):请求参数应该是 name1=value1&name2=value2 的形式。
+        if (header != null && !header.isEmpty()) {
+            for (Map.Entry<?, ?> entry : header.entrySet()) {
+                connection.setRequestProperty(entry.getKey().toString(), entry.getValue().toString());
             }
-            log.debug("request url:{}, body:{}", url, body);
-            return connection;
-        } catch (IOException e) {
-            log.error("request execute failed:", e);
-            throw new IllegalStateException(e);
+        }
+        // 默认值为：true，当前向远程服务读取数据时，设置为true，该参数可有可无
+        connection.setDoInput(true);
+        if (body != null) {
+            // 默认值为：false，当向远程服务器传送数据/写数据时，需要设置为true
+            connection.setDoOutput(true);
+            try (OutputStream os = connection.getOutputStream()) {
+                // 通过输出流对象将参数写出去/传输出去,它是通过字节数组写出的
+                os.write(body.getBytes());
+                // 通过连接对象获取一个输入流，向远程读取
+            }
+        }
+        log.debug("request url:{}, body:{}", url, body);
+        return connection;
+
+    }
+
+    @SneakyThrows
+    public InputStream responseStream() {
+        HttpURLConnection execute = null;
+        try {
+            execute = execute();
+            int code = execute.getResponseCode();
+            if (code != 200) {
+                log.warn("request may execute failed , http code:{},  url:{}, body:{}", code, url, body);
+            }
+            return execute.getInputStream();
         } finally {
-            if (connection != null) {
-                connection.disconnect();
+            if (execute != null) {
+                execute.disconnect();
             }
         }
     }
 
     @SneakyThrows
-    public InputStream responseStream() {
-        HttpURLConnection execute = execute();
-        int code = execute.getResponseCode();
-        if (code != 200) {
-            log.warn("request may execute failed , http code:{},  url:{}, body:{}", code, url, body);
-        }
-        return execute.getInputStream();
-    }
-
     public String responseString(Charset charset) {
         StringBuilder sb = new StringBuilder();
         try (InputStream is = responseStream();
@@ -225,11 +226,8 @@ public class HttpHelper {
                 sb.append(temp);
                 sb.append("\r\n");
             }
-        } catch (Exception e) {
-            log.error("convert to string failed:", e);
-            throw new IllegalStateException(e);
+            return sb.toString();
         }
-        return sb.toString();
     }
 
     public String responseString() {

@@ -1,5 +1,7 @@
 package io.github.bootystar.helper.base.tree;
 
+import lombok.RequiredArgsConstructor;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -14,6 +16,7 @@ import java.util.stream.Collectors;
  *
  * @author bootystar
  */
+@RequiredArgsConstructor
 public class TreeHelper<T, R> {
     private final Function<T, R> idGetter;
     private final Function<T, R> parentIdGetter;
@@ -27,24 +30,10 @@ public class TreeHelper<T, R> {
      * @param childrenSetter     子元素setter
      * @return {@link TreeHelper } 对应的树助手
      */
-    public static <T, R> TreeHelper<T, R> of(Function<T, R> idGetter, Function<T, R> parentIdGetter, BiConsumer<T, ? super List<T>> childrenSetter) {
+    public static <T, R> TreeHelper<T, R> of(Function<T, R> idGetter, 
+                                             Function<T, R> parentIdGetter, 
+                                             BiConsumer<T, ? super List<T>> childrenSetter) {
         return new TreeHelper<>(idGetter, parentIdGetter, childrenSetter);
-    }
-
-    /**
-     * 树助手
-     *
-     * @param idGetter           id getter
-     * @param parentIdGetter     父id getter
-     * @param childrenSetter     子元素setter
-     */
-    private TreeHelper(Function<T, R> idGetter, Function<T, R> parentIdGetter, BiConsumer<T, ? super List<T>> childrenSetter) {
-        if (idGetter == null || parentIdGetter == null || childrenSetter == null) {
-            throw new IllegalArgumentException("arguments can not be null" );
-        }
-        this.idGetter = idGetter;
-        this.parentIdGetter = parentIdGetter;
-        this.childrenSetter = childrenSetter;
     }
 
     /**
@@ -67,7 +56,8 @@ public class TreeHelper<T, R> {
      * @return {@link List } 根目录元素
      */
     public List<T> treeRoot(Collection<? extends T> elements, Predicate<? super T> filter) {
-        return buildRelation(elements).stream().filter(filter).collect(Collectors.toList());
+        return buildRelation(elements).stream().filter(filter)
+                .collect(Collectors.toList());
     }
 
     /**
@@ -78,7 +68,10 @@ public class TreeHelper<T, R> {
      * @return 指定id对应节点
      */
     public T treeById(Collection<? extends T> elements, R id) {
-        return buildRelation(elements).stream().filter(e -> Objects.equals(idGetter.apply(e), id)).findFirst().orElse(null);
+        return buildRelation(elements).stream()
+                .filter(e -> Objects.equals(idGetter.apply(e), id))
+                .findFirst()
+                .orElse(null);
     }
 
     /**
@@ -100,7 +93,9 @@ public class TreeHelper<T, R> {
      * @return 直接子元素列表
      */
     public List<T> findDirectChildrenById(Collection<? extends T> elements, R id) {
-        return elements.stream().filter(c -> Objects.equals(id, parentIdGetter.apply(c))).collect(Collectors.toList());
+        return elements.stream()
+                .filter(c -> Objects.equals(id, parentIdGetter.apply(c)))
+                .collect(Collectors.toList());
     }
 
     /**
@@ -111,7 +106,9 @@ public class TreeHelper<T, R> {
      * @return 直接子元素列表
      */
     public List<T> findDirectChildrenByNode(Collection<? extends T> elements, T node) {
-        return elements.stream().filter(c -> Objects.equals(idGetter.apply(node), parentIdGetter.apply(c))).collect(Collectors.toList());
+        return elements.stream()
+                .filter(c -> Objects.equals(idGetter.apply(node), parentIdGetter.apply(c)))
+                .collect(Collectors.toList());
     }
 
     /**
@@ -157,7 +154,10 @@ public class TreeHelper<T, R> {
      * @return 父元素列表
      */
     public List<T> findAllParentById(Collection<? extends T> elements, R id) {
-        T currentNode = elements.stream().filter(c -> Objects.equals(id, idGetter.apply(c))).findFirst().orElse(null);
+        T currentNode = elements.stream()
+                .filter(c -> Objects.equals(id, idGetter.apply(c)))
+                .findFirst()
+                .orElse(null);
         ArrayList<T> parents = new ArrayList<>();
         if (currentNode == null) {
             return parents;

@@ -3,6 +3,7 @@ package io.github.bootystar.helper.core;
 import lombok.RequiredArgsConstructor;
 
 import java.time.*;
+import java.time.format.DateTimeFormatter;
 import java.util.Date;
 
 /**
@@ -12,7 +13,7 @@ import java.util.Date;
  */
 @RequiredArgsConstructor
 public class DateTimeHelper {
-    public static final String PATTERN = "yyyy-MM-dd HH:mm:ss";
+//    public static final String PATTERN = "yyyy-MM-dd HH:mm:ss";
     private final ZonedDateTime zonedDateTime;
 
     /**
@@ -132,6 +133,6 @@ public class DateTimeHelper {
      */
     @Override
     public String toString() {
-        return toLocalDateTime().toString();
+        return toLocalDateTime().format(DateTimeFormatter.ISO_DATE_TIME);
     }
 }

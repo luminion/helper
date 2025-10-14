@@ -7,11 +7,11 @@ import java.math.BigDecimal;
 import java.util.Arrays;
 
 /**
- * 地图工具
+ * 地理地图工具
  * @author bootystar
  */
 @SuppressWarnings("unused")
-public abstract class MapHelper {
+public abstract class GeographicalHelper {
 
     @Data
     @NoArgsConstructor

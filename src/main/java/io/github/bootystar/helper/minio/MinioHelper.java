@@ -1,4 +1,4 @@
-package io.github.bootystar.helper.third.minio;
+package io.github.bootystar.helper.minio;
 
 import io.minio.*;
 import lombok.Getter;
@@ -35,18 +35,18 @@ public class MinioHelper {
         this.defaultBucket = defaultBucket;
         init();
     }
-    
-    private void init(){
-        if(defaultBucket!=null && !defaultBucket.isEmpty()){
+
+    private void init() {
+        if (defaultBucket != null && !defaultBucket.isEmpty()) {
             createBucket(defaultBucket);
         }
     }
 
     public boolean bucketExists(String bucketName) {
         try {
-           return minioClient.bucketExists(BucketExistsArgs.builder().bucket(bucketName).build());
-        }catch (Exception e){
-            log.error("createBucket => bucket error" , e);
+            return minioClient.bucketExists(BucketExistsArgs.builder().bucket(bucketName).build());
+        } catch (Exception e) {
+            log.error("createBucket => bucket error", e);
         }
         return false;
     }
@@ -54,12 +54,12 @@ public class MinioHelper {
     public boolean createBucket(String bucketName) {
         try {
             boolean b = minioClient.bucketExists(BucketExistsArgs.builder().bucket(bucketName).build());
-            if (!b){
+            if (!b) {
                 minioClient.makeBucket(MakeBucketArgs.builder().bucket(bucketName).build());
                 return true;
             }
-        }catch (Exception e){
-            log.error("createBucket => bucket error" , e);
+        } catch (Exception e) {
+            log.error("createBucket => bucket error", e);
         }
         return false;
     }
@@ -68,8 +68,8 @@ public class MinioHelper {
         try {
             minioClient.removeBucket(RemoveBucketArgs.builder().bucket(bucketName).build());
             return true;
-        }catch (Exception e){
-            log.error("createBucket => bucket error" , e);
+        } catch (Exception e) {
+            log.error("createBucket => bucket error", e);
         }
         return false;
     }
@@ -86,47 +86,46 @@ public class MinioHelper {
                             .build()
             );
             return put;
-        }  catch (Exception e) {
-            log.error("upload => file error" , e);
-        }finally {
+        } catch (Exception e) {
+            log.error("upload => file error", e);
+        } finally {
             try {
                 is.close();
             } catch (IOException e) {
-                log.error("upload => close  inputStream failed" , e);
+                log.error("upload => close  inputStream failed", e);
             }
         }
         return null;
     }
+
     public ObjectWriteResponse upload(String filename, InputStream is) {
-        if (defaultBucket==null) throw new IllegalStateException("defaultBucket is null, please set defaultBucket");
+        if (defaultBucket == null) throw new IllegalStateException("defaultBucket is null, please set defaultBucket");
         return upload(defaultBucket, filename, is);
     }
 
 
-    public boolean fileExists(String bucketName, String filename){
+    public boolean fileExists(String bucketName, String filename) {
         StatObjectResponse statObjectResponse = null;
         try {
             statObjectResponse = minioClient.statObject(StatObjectArgs.builder().bucket(bucketName).object(filename).build());
-        } catch (Exception e){
+        } catch (Exception e) {
             throw new RuntimeException(e);
         }
         System.out.println(statObjectResponse);
         return statObjectResponse.size() > 0;
     }
 
-    public boolean fileExists(String filename){
-        if (defaultBucket==null) throw new IllegalStateException("defaultBucket is null, please set defaultBucket");
+    public boolean fileExists(String filename) {
+        if (defaultBucket == null) throw new IllegalStateException("defaultBucket is null, please set defaultBucket");
         return fileExists(defaultBucket, filename);
     }
 
 
-    public boolean download(String bucketName, String filename, OutputStream os){
-        try (InputStream is =
-                     minioClient.getObject(
-                             GetObjectArgs.builder()
+    public boolean download(String bucketName, String filename, OutputStream os) {
+        try (InputStream is = minioClient.getObject(GetObjectArgs.builder()
                                      .bucket(bucketName)
                                      .object(filename)
-                                     .build());){
+                                     .build())) {
             byte[] buf = new byte[16384];
             int bytesRead;
             while ((bytesRead = is.read(buf, 0, buf.length)) >= 0) {
@@ -134,31 +133,24 @@ public class MinioHelper {
             }
             os.flush();
             return true;
-        }catch (Exception e){
-            log.error("download => close  inputStream failed" , e);
-        }finally {
-            if (os != null){
+        } catch (Exception e) {
+            log.error("download => close  inputStream failed", e);
+        } finally {
+            if (os != null) {
                 try {
                     os.close();
                 } catch (IOException e) {
-                    log.error("download => close  outputStream failed" , e);
+                    log.error("download => close  outputStream failed", e);
                 }
             }
         }
         return false;
     }
 
-    public boolean download(String filename, OutputStream os){
-        if (defaultBucket==null) throw new IllegalStateException("defaultBucket is null, please set defaultBucket");
+    public boolean download(String filename, OutputStream os) {
+        if (defaultBucket == null) throw new IllegalStateException("defaultBucket is null, please set defaultBucket");
         return download(defaultBucket, filename, os);
     }
-
-
-
-
-
-
-
 
 
 }

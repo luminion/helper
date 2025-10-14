@@ -1,4 +1,4 @@
-package io.github.bootystar.helper.base.tree;
+package io.github.bootystar.helper.core;
 
 import lombok.RequiredArgsConstructor;
 

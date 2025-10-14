@@ -1,4 +1,4 @@
-package io.github.bootystar.helper.base.http;
+package io.github.bootystar.helper.core;
 
 import lombok.extern.slf4j.Slf4j;
 

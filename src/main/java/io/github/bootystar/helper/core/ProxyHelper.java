@@ -1,11 +1,11 @@
-package io.github.bootystar.helper.base.proxy;
+package io.github.bootystar.helper.core;
 
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
-import java.lang.reflect.Proxy;
 
 /**
  * 代理助手
+ * todo 待完善
  *
  * @author bootystar
  */

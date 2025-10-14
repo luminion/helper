@@ -1,10 +1,9 @@
-package io.github.bootystar.helper.base.reflect;
+package io.github.bootystar.helper.core;
 
 import com.google.common.base.Objects;
 import lombok.SneakyThrows;
 
 import java.lang.reflect.Field;
-import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.Collection;
 import java.util.HashMap;

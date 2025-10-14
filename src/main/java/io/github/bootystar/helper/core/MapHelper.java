@@ -1,6 +1,5 @@
-package io.github.bootystar.helper.base.map;
+package io.github.bootystar.helper.core;
 
-import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 

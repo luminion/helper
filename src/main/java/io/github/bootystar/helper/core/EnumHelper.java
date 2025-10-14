@@ -1,4 +1,4 @@
-package io.github.bootystar.helper.base.reflect;
+package io.github.bootystar.helper.core;
 
 import lombok.Data;
 import lombok.SneakyThrows;

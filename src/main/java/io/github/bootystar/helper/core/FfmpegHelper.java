@@ -1,4 +1,4 @@
-package io.github.bootystar.helper.base.ffmpeg;
+package io.github.bootystar.helper.core;
 
 import lombok.extern.slf4j.Slf4j;
 

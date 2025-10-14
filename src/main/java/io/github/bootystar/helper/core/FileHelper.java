@@ -1,11 +1,11 @@
 package io.github.bootystar.helper.core;
 
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
-import java.io.IOException;
 import java.nio.channels.FileChannel;
 
 /**
@@ -25,7 +25,7 @@ public abstract class FileHelper {
      */
     public static void deleteFileByPattern(File source, String pattern) {
         if (source == null || pattern == null || pattern.isEmpty()) {
-            throw new RuntimeException("源文件或目标不合法");
+            throw new IllegalArgumentException("源文件或目标不合法");
         }
         if (source.isDirectory()) {
             File[] files = source.listFiles();
@@ -70,9 +70,10 @@ public abstract class FileHelper {
      * @param source 源文件
      * @param dest   输出文件
      */
+    @SneakyThrows
     private static void copyFile(File source, File dest) {
         if (source == null || source.isDirectory() || dest == null || dest.isDirectory()) {
-            throw new IllegalStateException("源文件或目标不合法");
+            throw new IllegalArgumentException("源文件或目标不合法");
         }
         try (
                 FileInputStream is = new FileInputStream(source);
@@ -81,8 +82,6 @@ public abstract class FileHelper {
                 FileChannel outputChannel = os.getChannel()
         ) {
             outputChannel.transferFrom(inputChannel, 0, inputChannel.size());
-        } catch (IOException e) {
-            throw new RuntimeException("复制失败, io异常");
         }
     }
 
@@ -94,7 +93,7 @@ public abstract class FileHelper {
      */
     public static void copyDir(File sourceDir, File destDir) {
         if (sourceDir == null || !sourceDir.isDirectory() || destDir == null || !destDir.isDirectory()) {
-            throw new IllegalStateException("源文件或目标不合法");
+            throw new IllegalArgumentException("源文件或目标不合法");
         }
         if (!destDir.exists()) {
             destDir.mkdirs();

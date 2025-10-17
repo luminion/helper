@@ -110,7 +110,7 @@ public class EnumHelper<E extends Enum<E>> {
     /**
      * 将枚举转换为Map
      *
-     * @return Map<Integer, String>
+     * @return key-value构成的map
      */
     public Map<Integer, String> toMap() {
         Map<Integer, String> map = new HashMap<>();

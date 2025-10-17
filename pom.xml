@@ -15,7 +15,7 @@
     <version>1.0.0-RC1</version>
 
     <properties>
-        <minio.version>8.6.0</minio.version>
+        <minio.version>8.5.17</minio.version>
         <slf4j.version>2.0.17</slf4j.version>
         <lombok.version>1.18.34</lombok.version>
     </properties>

@@ -1,4 +1,4 @@
-package io.github.bootystar.helper.core;
+package io.github.luxmixus.helper.core;
 
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -11,7 +11,7 @@ import java.nio.channels.FileChannel;
 /**
  * 文件操作工具
  *
- * @author bootystar
+ * @author luxmixus
  */
 @Slf4j
 public abstract class FileHelper {

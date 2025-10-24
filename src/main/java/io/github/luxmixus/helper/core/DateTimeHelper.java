@@ -1,4 +1,4 @@
-package io.github.bootystar.helper.core;
+package io.github.luxmixus.helper.core;
 
 import lombok.RequiredArgsConstructor;
 
@@ -9,7 +9,7 @@ import java.util.Date;
 /**
  * 时间日期助手
  *
- * @author bootystar
+ * @author luxmixus
  */
 @RequiredArgsConstructor
 public class DateTimeHelper {

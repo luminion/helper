@@ -1,4 +1,4 @@
-package io.github.bootystar.helper.core;
+package io.github.luxmixus.helper.core;
 
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -8,7 +8,7 @@ import java.util.Arrays;
 
 /**
  * 地理地图工具
- * @author bootystar
+ * @author luxmixus
  */
 @SuppressWarnings("unused")
 public abstract class GeographicalHelper {

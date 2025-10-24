@@ -1,4 +1,4 @@
-package io.github.bootystar.helper.minio;
+package io.github.luxmixus.helper.minio;
 
 import io.minio.*;
 import lombok.Getter;

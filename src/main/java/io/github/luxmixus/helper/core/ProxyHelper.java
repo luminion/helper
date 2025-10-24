@@ -1,4 +1,4 @@
-//package io.github.bootystar.helper.core;
+//package io.github.luxmixus.helper.core;
 //
 //import java.lang.reflect.InvocationHandler;
 //import java.lang.reflect.Method;
@@ -7,7 +7,7 @@
 // * 代理助手
 // * todo 待完善
 // *
-// * @author bootystar
+// * @author luxmixus
 // */
 //public class ProxyHelper {
 //    

@@ -1,4 +1,4 @@
-package io.github.bootystar.helper.core;
+package io.github.luxmixus.helper.core;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -17,7 +17,7 @@ import static java.time.temporal.ChronoUnit.*;
 /**
  * ffmpeg助手
  *
- * @author bootystar
+ * @author luxmixus
  */
 @Slf4j
 public class FfmpegHelper {

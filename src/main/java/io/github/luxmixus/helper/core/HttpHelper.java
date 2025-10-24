@@ -1,4 +1,4 @@
-package io.github.bootystar.helper.core;
+package io.github.luxmixus.helper.core;
 
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -15,7 +15,7 @@ import java.util.Map;
 /**
  * http请求助手
  *
- * @author bootystar
+ * @author luxmixus
  */
 @Slf4j
 public class HttpHelper {

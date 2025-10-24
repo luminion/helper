@@ -41,7 +41,6 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <minio.version>8.5.17</minio.version>
-        <slf4j.version>2.0.17</slf4j.version>
         <lombok.version>1.18.34</lombok.version>
         <easyexcel.version>4.0.3</easyexcel.version>
         <fastexcel.version>1.3.0</fastexcel.version>

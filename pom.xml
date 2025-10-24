@@ -9,7 +9,7 @@
     <version>1.0.0-SNAPSHOT</version>
     
     <name>${project.groupId}:${project.artifactId}</name>
-    <description>framework powered by luxmixus</description>
+    <description>A collection of helper classes and utilities to accelerate Java development, with support various common tasks.</description>
     <url>https://github.com/luxmixus</url>
 
     <licenses>

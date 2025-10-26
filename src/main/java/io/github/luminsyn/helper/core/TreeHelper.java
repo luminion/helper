@@ -1,4 +1,4 @@
-package io.github.luxmixus.helper.core;
+package io.github.luminsyn.helper.core;
 
 import lombok.RequiredArgsConstructor;
 
@@ -14,7 +14,7 @@ import java.util.stream.Collectors;
 /**
  * 树状工具助手
  *
- * @author luxmixus
+ * @author luminsyn
  */
 @RequiredArgsConstructor
 public class TreeHelper<T, R> {

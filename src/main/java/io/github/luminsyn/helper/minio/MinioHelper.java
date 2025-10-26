@@ -1,4 +1,4 @@
-package io.github.luxmixus.helper.minio;
+package io.github.luminsyn.helper.minio;
 
 import io.minio.*;
 import lombok.Getter;

@@ -1,4 +1,4 @@
-package io.github.luxmixus.helper.core;
+package io.github.luminsyn.helper.core;
 
 import lombok.RequiredArgsConstructor;
 
@@ -9,7 +9,7 @@ import java.util.Date;
 /**
  * 时间日期助手
  *
- * @author luxmixus
+ * @author luminsyn
  */
 @RequiredArgsConstructor
 public class DateTimeHelper {

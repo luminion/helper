@@ -1,4 +1,4 @@
-package io.github.luminsyn.helper.core;
+package io.github.luminion.helper.core;
 
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -8,7 +8,7 @@ import java.util.Arrays;
 
 /**
  * 地理地图工具
- * @author luminsyn
+ * @author luminion
  */
 @SuppressWarnings("unused")
 public abstract class GeographicalHelper {

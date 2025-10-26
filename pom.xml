@@ -4,13 +4,13 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     
-    <groupId>io.github.luminsyn</groupId>
+    <groupId>io.github.luminion</groupId>
     <artifactId>helper</artifactId>
     <version>1.0.0-SNAPSHOT</version>
     
     <name>${project.groupId}:${project.artifactId}</name>
     <description>A collection of helper classes and utilities to accelerate Java development, with support various common tasks.</description>
-    <url>https://github.com/luminsyn</url>
+    <url>https://github.com/luminion</url>
 
     <licenses>
         <license>
@@ -21,17 +21,17 @@
 
     <developers>
         <developer>
-            <name>luminsyn</name>
+            <name>luminion</name>
             <email>604647004@qq.com</email>
-            <organization>luminsyn</organization>
-            <organizationUrl>https://github.com/luminsyn</organizationUrl>
+            <organization>luminion</organization>
+            <organizationUrl>https://github.com/luminion</organizationUrl>
         </developer>
     </developers>
 
     <scm>
-        <connection>scm:git:git://github.com/luminsyn/helper.git</connection>
-        <developerConnection>scm:git:ssh://github.com:luminsyn/helper.git</developerConnection>
-        <url>https://github.com/luminsyn/helper/tree/master</url>
+        <connection>scm:git:git://github.com/luminion/helper.git</connection>
+        <developerConnection>scm:git:ssh://github.com:luminion/helper.git</developerConnection>
+        <url>https://github.com/luminion/helper/tree/master</url>
     </scm>
 
     <properties>

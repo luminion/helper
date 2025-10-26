@@ -1,4 +1,4 @@
-package io.github.luminsyn.helper.core;
+package io.github.luminion.helper.core;
 
 import lombok.RequiredArgsConstructor;
 
@@ -11,7 +11,7 @@ import java.util.function.Function;
 /**
  * 枚举助手，方便获取枚举中的key和value
  *
- * @author luminsyn
+ * @author luminion
  */
 @RequiredArgsConstructor
 public class EnumHelper<E extends Enum<E>> {

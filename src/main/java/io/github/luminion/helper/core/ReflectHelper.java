@@ -1,4 +1,4 @@
-package io.github.luminsyn.helper.core;
+package io.github.luminion.helper.core;
 
 import com.google.common.base.Objects;
 import lombok.SneakyThrows;
@@ -13,7 +13,7 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * 反射帮手
  *
- * @author luminsyn
+ * @author luminion
  */
 public abstract class ReflectHelper {
 

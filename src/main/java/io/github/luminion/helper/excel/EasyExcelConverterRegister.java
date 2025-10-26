@@ -1,4 +1,4 @@
-package io.github.luminsyn.helper.excel;
+package io.github.luminion.helper.excel;
 
 import com.alibaba.excel.converters.Converter;
 import com.alibaba.excel.converters.DefaultConverterLoader;
@@ -28,7 +28,7 @@ import java.util.List;
 /**
  * 为Excel的转换器进行注册
  *
- * @author luminsyn
+ * @author luminion
  */
 @Slf4j
 public abstract class EasyExcelConverterRegister {

@@ -1,4 +1,4 @@
-package io.github.luminsyn.helper.core;
+package io.github.luminion.helper.core;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -17,7 +17,7 @@ import static java.time.temporal.ChronoUnit.*;
 /**
  * ffmpeg助手
  *
- * @author luminsyn
+ * @author luminion
  */
 @Slf4j
 public class FfmpegHelper {

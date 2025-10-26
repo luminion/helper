@@ -1,4 +1,4 @@
-package io.github.luminsyn.helper.core;
+package io.github.luminion.helper.core;
 
 import lombok.RequiredArgsConstructor;
 
@@ -9,7 +9,7 @@ import java.util.Date;
 /**
  * 时间日期助手
  *
- * @author luminsyn
+ * @author luminion
  */
 @RequiredArgsConstructor
 public class DateTimeHelper {

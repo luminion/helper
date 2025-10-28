@@ -51,6 +51,45 @@ public abstract class GeographicalKit {
     public static double getDistanceMeters(Point point1, Point point2) {
         return getDistanceKilometer(point1, point2) * 1000;
     }
+
+    /**
+     * 获取距离米
+     *
+     * @param longitude1 第一个点的经度
+     * @param latitude1  第一个点的纬度
+     * @param longitude2 第二个点的经度
+     * @param latitude2  第二个点的纬度
+     * @return 距离(米)
+     */
+    public static double getDistanceMeters(double longitude1, double latitude1, double longitude2, double latitude2) {
+        return getDistanceKilometer(longitude1, latitude1, longitude2, latitude2) * 1000;
+    }
+
+    /**
+     * 获取距离米
+     *
+     * @param longitude1 第一个点的经度
+     * @param latitude1  第一个点的纬度
+     * @param longitude2 第二个点的经度
+     * @param latitude2  第二个点的纬度
+     * @return 距离(米)
+     */
+    public static double getDistanceMeters(String longitude1, String latitude1, String longitude2, String latitude2) {
+        return getDistanceKilometer(longitude1, latitude1, longitude2, latitude2) * 1000;
+    }
+
+    /**
+     * 获取距离米
+     *
+     * @param longitude1 第一个点的经度
+     * @param latitude1  第一个点的纬度
+     * @param longitude2 第二个点的经度
+     * @param latitude2  第二个点的纬度
+     * @return 距离(米)
+     */
+    public static double getDistanceMeters(BigDecimal longitude1, BigDecimal latitude1, BigDecimal longitude2, BigDecimal latitude2) {
+        return getDistanceKilometer(longitude1, latitude1, longitude2, latitude2) * 1000;
+    }
     
     /**
      * 获取距离(千米)
@@ -81,6 +120,51 @@ public abstract class GeographicalKit {
         // 弧长乘地球半径, 返回单位: 千米, 地球半径,单位 km
         s = s * 6378.137;
         return s;
+    }
+
+    /**
+     * 获取距离(千米)
+     *
+     * @param longitude1 第一个点的经度
+     * @param latitude1  第一个点的纬度
+     * @param longitude2 第二个点的经度
+     * @param latitude2  第二个点的纬度
+     * @return 距离(千米)
+     */
+    public static double getDistanceKilometer(double longitude1, double latitude1, double longitude2, double latitude2) {
+        Point point1 = new Point(longitude1, latitude1);
+        Point point2 = new Point(longitude2, latitude2);
+        return getDistanceKilometer(point1, point2);
+    }
+
+    /**
+     * 获取距离(千米)
+     *
+     * @param longitude1 第一个点的经度
+     * @param latitude1  第一个点的纬度
+     * @param longitude2 第二个点的经度
+     * @param latitude2  第二个点的纬度
+     * @return 距离(千米)
+     */
+    public static double getDistanceKilometer(String longitude1, String latitude1, String longitude2, String latitude2) {
+        Point point1 = new Point(longitude1, latitude1);
+        Point point2 = new Point(longitude2, latitude2);
+        return getDistanceKilometer(point1, point2);
+    }
+
+    /**
+     * 获取距离(千米)
+     *
+     * @param longitude1 第一个点的经度
+     * @param latitude1  第一个点的纬度
+     * @param longitude2 第二个点的经度
+     * @param latitude2  第二个点的纬度
+     * @return 距离(千米)
+     */
+    public static double getDistanceKilometer(BigDecimal longitude1, BigDecimal latitude1, BigDecimal longitude2, BigDecimal latitude2) {
+        Point point1 = new Point(longitude1, latitude1);
+        Point point2 = new Point(longitude2, latitude2);
+        return getDistanceKilometer(point1, point2);
     }
 
 

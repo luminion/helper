@@ -14,7 +14,7 @@ import java.nio.channels.FileChannel;
  * @author luminion
  */
 @Slf4j
-public abstract class FileHelper {
+public abstract class FileKit {
 
 
     /**

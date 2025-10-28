@@ -11,7 +11,7 @@ import java.util.Arrays;
  * @author luminion
  */
 @SuppressWarnings("unused")
-public abstract class GeographicalHelper {
+public abstract class GeographicalKit {
 
     @Data
     @NoArgsConstructor

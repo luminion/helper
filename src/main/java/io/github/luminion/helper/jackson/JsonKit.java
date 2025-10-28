@@ -156,7 +156,7 @@ public abstract class JsonKit {
      * @return 代表该 JSON 对象的 Map
      */
     public static Map<String, Object> parseObject(String json) {
-        return parseObject(json, new TypeReference<Map<String, Object>>() {});
+        return jsonHelper.parseObject(json);
     }
 
     /**
@@ -166,7 +166,7 @@ public abstract class JsonKit {
      * @return 对象的列表
      */
     public static List<Object> parseArray(String json) {
-        return parseObject(json, new TypeReference<List<Object>>() {});
+        return jsonHelper.parseArray(json);
     }
 
     /**

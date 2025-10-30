@@ -43,6 +43,18 @@ public abstract class GeographicalKit {
     }
 
     /**
+     * 在圆圈中
+     *
+     * @param point        点
+     * @param circle 圆点
+     * @param radius       半径
+     * @return boolean
+     */
+    public static boolean isInCircle(GeoPoint point, GeoPoint circle, double radius) {
+        return point.isInCircle(circle,radius);
+    }
+
+    /**
      * 判断点是否在区域内
      *
      * @param point          点
@@ -50,7 +62,7 @@ public abstract class GeographicalKit {
      * @return boolean
      */
     public static boolean isPointInPolygon(GeoPoint point, GeoPoint... boundaryPoints) {
-        return point.isInsidePolygon(boundaryPoints);
+        return point.isInPolygon(boundaryPoints);
     }
 
 

@@ -20,8 +20,7 @@ public class GeoPoint {
     private static final double a = 6378245.0;
     private static final double ee = 0.00669342162296594323;
     private static final double earth = 6378.137;
-    
-    
+
     /**
      * 经度
      */
@@ -90,15 +89,14 @@ public class GeoPoint {
         }
         return new GeoPoint(maxLng, maxLat);
     }
-    
 
     /**
-     * 获取距离 (千米)
+     * 获取距离 (米)
      *
      * @param point 点
      * @return double
      */
-    public double getDistanceKilometers(GeoPoint point) {
+    public double getDistanceMeters(GeoPoint point) {
         //用户纬度
         double userLongitude = Math.toRadians(point.getLongitude());
         double userLatitude = Math.toRadians(point.getLatitude());
@@ -111,32 +109,42 @@ public class GeoPoint {
         double b = userLongitude - longitude;
         // 计算两点距离的公式
         double s = 2 * Math.asin(Math.sqrt(Math.pow(Math.sin(a / 2), 2) + Math.cos(userLatitude) * Math.cos(latitude) * Math.pow(Math.sin(b / 2), 2)));
-        // 弧长乘地球半径, 返回单位: 千米, 地球半径,单位 km
-        s = s * 6378.137;
+        // 弧长乘赤道半径, 返回单位: 米, 地球半径,单位 米
+        s = s * 6378137;
         return s;
     }
 
-
     /**
-     * 获取距离 (米)
+     * 获取距离 (千米)
      *
      * @param point 点
      * @return double
      */
-    public double getDistanceMeters(GeoPoint point) {
-        return getDistanceKilometers(point) * 1000;
+    public double getDistanceKilometers(GeoPoint point) {
+        return getDistanceMeters(point) / 1000;
+    }
+
+    /**
+     * 是否在圆圈中
+     *
+     * @param circle 圆心
+     * @param radius 半径(米)
+     * @return boolean
+     */
+    public boolean isInCircle(GeoPoint circle, double radius) {
+        return getDistanceMeters(circle) <= radius;
     }
 
 
     /**
-     * 判断点是否在区域内(基本思路是用交点法)
+     * 是否在指定区域内(基本思路是用交点法)
      *
      * @param boundaryPoints 边界点
      * @return boolean
      * @link <a href="https://blog.csdn.net/zheng12tian/article/details/40617445">原文链接</a>
      */
-    public boolean isInsidePolygon(List<GeoPoint> boundaryPoints) {
-        return isInsidePolygon(boundaryPoints.toArray(new GeoPoint[0]));
+    public boolean isInPolygon(List<GeoPoint> boundaryPoints) {
+        return isInPolygon(boundaryPoints.toArray(new GeoPoint[0]));
     }
 
     /**
@@ -145,7 +153,7 @@ public class GeoPoint {
      * @param boundaryPoints 边界点
      * @return boolean
      */
-    public boolean isInsidePolygon(GeoPoint[] boundaryPoints) {
+    public boolean isInPolygon(GeoPoint[] boundaryPoints) {
         // 防止第一个点与最后一个点相同
         if (boundaryPoints != null && boundaryPoints.length > 0 && boundaryPoints[boundaryPoints.length - 1].equals(boundaryPoints[0])) {
             boundaryPoints = Arrays.copyOf(boundaryPoints, boundaryPoints.length - 1);
@@ -163,10 +171,9 @@ public class GeoPoint {
                 return true;
             }
         }
-        /*
-         * 基本思想是利用X轴射线法，计算射线与多边形各边的交点，如果是偶数，则点在多边形外，否则在多边形内。还会考虑一些特殊情况，如点在多边形顶点上
-         * ， 点在多边形边上等特殊情况。
-         */
+        
+        // 基本思想是利用X轴射线法，计算射线与多边形各边的交点，如果是偶数，则点在多边形外，否则在多边形内。还会考虑一些特殊情况，如点在多边形顶点上， 点在多边形边上等特殊情况。
+       
         // X轴射线与多边形的交点数
         int intersectPointCount = 0;
         // X轴射线与多边形的交点权值
@@ -188,7 +195,7 @@ public class GeoPoint {
 
             // 此处判断射线与边相交
             // 如果点的y坐标在边P1P2的y坐标开区间内
-            if (this.getLatitude() > Math.min(point1.getLatitude(), point2.getLatitude()) 
+            if (this.getLatitude() > Math.min(point1.getLatitude(), point2.getLatitude())
                     && this.getLatitude() < Math.max(point1.getLatitude(), point2.getLatitude())) {
                 // 若边P1P2是垂直的
                 if (point1.getLongitude() == point2.getLongitude()) {
@@ -208,7 +215,7 @@ public class GeoPoint {
                         ++intersectPointCount;
                     }
                     // 点point的x坐标在点P1和P2的x坐标中间
-                    else if (this.getLongitude() > Math.min(point1.getLongitude(), point2.getLongitude()) 
+                    else if (this.getLongitude() > Math.min(point1.getLongitude(), point2.getLongitude())
                             && this.getLongitude() < Math.max(point1.getLongitude(), point2.getLongitude())) {
                         double slopeDiff = getSlopeDiff(point1, point2);
                         if (slopeDiff > 0) {
@@ -232,9 +239,7 @@ public class GeoPoint {
                         return true;
                     }
                 }
-                /*
-                 * 判断点通过多边形顶点
-                 */
+                // 判断点通过多边形顶点
                 if (((this.getLatitude() == point1.getLatitude() && this.getLongitude() < point1.getLongitude())) || (this.getLatitude() == point2.getLatitude() && this.getLongitude() < point2.getLongitude())) {
                     if (point2.getLatitude() < point1.getLatitude()) {
                         intersectPointWeights += -0.5;
@@ -248,7 +253,9 @@ public class GeoPoint {
         // 偶数在多边形外
         if ((intersectPointCount + Math.abs(intersectPointWeights)) % 2 == 0) {
             return false;
-        } else { // 奇数在多边形内
+        }
+        // 奇数在多边形内
+        else { 
             return true;
         }
     }
@@ -256,7 +263,7 @@ public class GeoPoint {
 
     /**
      * 获取与指定直线的斜率差
-     * <p> 
+     * <p>
      * 当斜率差值接近0（小于某个精度值）时，说明当前点在由 point1 和 point2 构成的线段上
      *
      * @param point1 point1 线段顶点1
@@ -289,7 +296,7 @@ public class GeoPoint {
     }
 
     /**
-     * 判断是否在矩形内在矩形边界上，也算在矩形内(根据这些点，构造一个外包矩形)
+     * 判断是否在指定坐标外包矩形边界上，也可以用于计算在矩形内(根据这些点，构造一个外包矩形)
      *
      * @param boundaryPoints 边界点
      * @return boolean
@@ -306,9 +313,5 @@ public class GeoPoint {
         return b && b3 && b2 && b4;
     }
 
-   
 
-
-
-    
 }

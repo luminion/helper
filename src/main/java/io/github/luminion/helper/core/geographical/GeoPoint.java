@@ -93,6 +93,34 @@ public class GeoPoint {
     }
 
     /**
+     * 判断坐标是否不在国内
+     *
+     * @param lng 经度
+     * @param lat 纬度
+     * @return 坐标一定不在国内时返回true, 返回false代表不确定
+     */
+    private static boolean isOutOfChinaRectangle(double lng, double lat) {
+        return (lng < 72.004 || lng > 137.8347) || (lat < 0.8293 || lat > 55.8271);
+    }
+    
+    private static double transformLat(double lng, double lat) {
+        double ret = -100.0 + 2.0 * lng + 3.0 * lat + 0.2 * lat * lat + 0.1 * lng * lat + 0.2 * Math.sqrt(Math.abs(lng));
+        ret += (20.0 * Math.sin(6.0 * lng * PI) + 20.0 * Math.sin(2.0 * lng * PI)) * 2.0 / 3.0;
+        ret += (20.0 * Math.sin(lat * PI) + 40.0 * Math.sin(lat / 3.0 * PI)) * 2.0 / 3.0;
+        ret += (160.0 * Math.sin(lat / 12.0 * PI) + 320 * Math.sin(lat * PI / 30.0)) * 2.0 / 3.0;
+        return ret;
+    }
+
+    private static double transformLng(double lng, double lat) {
+        double ret = 300.0 + lng + 2.0 * lat + 0.1 * lng * lng + 0.1 * lng * lat + 0.1 * Math.sqrt(Math.abs(lng));
+        ret += (20.0 * Math.sin(6.0 * lng * PI) + 20.0 * Math.sin(2.0 * lng * PI)) * 2.0 / 3.0;
+        ret += (20.0 * Math.sin(lng * PI) + 40.0 * Math.sin(lng / 3.0 * PI)) * 2.0 / 3.0;
+        ret += (150.0 * Math.sin(lng / 12.0 * PI) + 300.0 * Math.sin(lng / 30.0 * PI)) * 2.0 / 3.0;
+        return ret;
+    }
+
+
+    /**
      * 获取距离 (米)
      *
      * @param point 点
@@ -321,7 +349,6 @@ public class GeoPoint {
      * @return GCJ02 坐标点
      */
     public GeoPoint transformBD09ToGCJ02() {
-        GeoPoint southWestPoint = null;
         double x = this.longitude - 0.0065;
         double y = this.latitude - 0.006;
         double z = Math.sqrt(x * x + y * y) - 0.00002 * Math.sin(y * x_PI);
@@ -330,7 +357,85 @@ public class GeoPoint {
         double gcj_lat = z * Math.sin(theta);
         return new GeoPoint(gcj_lng, gcj_lat);
     }
-    
+
+    /**
+     * GCJ02 转百度坐标
+     *
+     * @return 百度坐标：[经度，纬度]
+     */
+    public GeoPoint transformGCJ02ToBD09() {
+        double z = Math.sqrt(this.longitude * this.longitude + this.latitude * this.latitude) + 0.00002 * Math.sin(this.latitude * x_PI);
+        double theta = Math.atan2(this.latitude, this.longitude) + 0.000003 * Math.cos(this.longitude * x_PI);
+        double bd_lng = z * Math.cos(theta) + 0.0065;
+        double bd_lat = z * Math.sin(theta) + 0.006;
+        return new GeoPoint(bd_lng, bd_lat);
+    }
+
+    /**
+     * GCJ02 转 WGS84
+     *
+     * @return WGS84坐标：[经度，纬度]
+     */
+    public GeoPoint transformGCJ02ToWGS84() {
+        if (isOutOfChinaRectangle(this.longitude, this.latitude)) {
+            return new GeoPoint(this.longitude, this.latitude);
+        } else {
+            double dLat = transformLat(this.longitude - 105.0, this.latitude - 35.0);
+            double dLng = transformLng(this.longitude - 105.0, this.latitude - 35.0);
+            double radLat = this.latitude / 180.0 * PI;
+            double magic = Math.sin(radLat);
+            magic = 1 - ee * magic * magic;
+            double sqrtMagic = Math.sqrt(magic);
+            dLat = (dLat * 180.0) / ((a * (1 - ee)) / (magic * sqrtMagic) * PI);
+            dLng = (dLng * 180.0) / (a / sqrtMagic * Math.cos(radLat) * PI);
+            double mgLat = this.latitude + dLat;
+            double mgLng = this.longitude + dLng;
+            return new GeoPoint(this.longitude * 2 - mgLng, this.latitude * 2 - mgLat);
+        }
+    }
+
+    /**
+     * WGS84 坐标 转 GCJ02
+     *
+     * @return GCJ02 坐标：[经度，纬度]
+     */
+    public GeoPoint transformWGS84ToGCJ02() {
+        if (isOutOfChinaRectangle(this.longitude, this.latitude)) {
+            return new GeoPoint(this.longitude, this.latitude);
+        } else {
+            double dLat = transformLat(this.longitude - 105.0, this.latitude - 35.0);
+            double dLng = transformLng(this.longitude - 105.0, this.latitude - 35.0);
+            double redLat = this.latitude / 180.0 * PI;
+            double magic = Math.sin(redLat);
+            magic = 1 - ee * magic * magic;
+            double sqrtMagic = Math.sqrt(magic);
+            dLat = (dLat * 180.0) / ((a * (1 - ee)) / (magic * sqrtMagic) * PI);
+            dLng = (dLng * 180.0) / (a / sqrtMagic * Math.cos(redLat) * PI);
+            double mgLat = this.latitude + dLat;
+            double mgLng = this.longitude + dLng;
+            return new GeoPoint(mgLng, mgLat);
+        }
+    }
+
+    /**
+     * 百度坐标BD09 转 WGS84
+     *
+     * @return WGS84 坐标：[经度，纬度]
+     */
+    public GeoPoint transformBD09ToWGS84() {
+        GeoPoint gcj02Point = transformBD09ToGCJ02();
+        return gcj02Point.transformGCJ02ToWGS84();
+    }
+
+    /**
+     * WGS84 转 百度坐标BD09
+     *
+     * @return BD09 坐标：[经度，纬度]
+     */
+    public GeoPoint transformWGS84ToBD09() {
+        GeoPoint gcj02Point = transformWGS84ToGCJ02();
+        return gcj02Point.transformGCJ02ToBD09();
+    }
 
 
 }

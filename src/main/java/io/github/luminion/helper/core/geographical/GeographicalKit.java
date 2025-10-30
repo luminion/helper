@@ -83,6 +83,88 @@ public abstract class GeographicalKit {
         return point.isInPolygon(boundaryPoints);
     }
 
+    /**
+     * 百度坐标（BD09）转 GCJ02
+     *
+     * @param point BD09坐标点
+     * @return GCJ02 坐标点
+     */
+    public static GeoPoint transformBD09ToGCJ02(GeoPoint point) {
+        return point.transformBD09ToGCJ02();
+    }
 
+    public static GeoPoint transformBD09ToGCJ02(double longitude, double latitude) {
+        return new GeoPoint(longitude, latitude).transformBD09ToGCJ02();
+    }
+
+    /**
+     * GCJ02 转百度坐标
+     *
+     * @param point GCJ02坐标点
+     * @return 百度坐标点
+     */
+    public static GeoPoint transformGCJ02ToBD09(GeoPoint point) {
+        return point.transformGCJ02ToBD09();
+    }
+
+    public static GeoPoint transformGCJ02ToBD09(double longitude, double latitude) {
+        return new GeoPoint(longitude, latitude).transformGCJ02ToBD09();
+    }
+
+    /**
+     * GCJ02 转 WGS84
+     *
+     * @param point GCJ02坐标点
+     * @return WGS84坐标点
+     */
+    public static GeoPoint transformGCJ02ToWGS84(GeoPoint point) {
+        return point.transformGCJ02ToWGS84();
+    }
+
+    public static GeoPoint transformGCJ02ToWGS84(double longitude, double latitude) {
+        return new GeoPoint(longitude, latitude).transformGCJ02ToWGS84();
+    }
+
+    /**
+     * WGS84 坐标 转 GCJ02
+     *
+     * @param point WGS84坐标点
+     * @return GCJ02 坐标点
+     */
+    public static GeoPoint transformWGS84ToGCJ02(GeoPoint point) {
+        return point.transformWGS84ToGCJ02();
+    }
+
+    public static GeoPoint transformWGS84ToGCJ02(double longitude, double latitude) {
+        return new GeoPoint(longitude, latitude).transformWGS84ToGCJ02();
+    }
+
+    /**
+     * 百度坐标BD09 转 WGS84
+     *
+     * @param point BD09坐标点
+     * @return WGS84 坐标点
+     */
+    public static GeoPoint transformBD09ToWGS84(GeoPoint point) {
+        return point.transformBD09ToWGS84();
+    }
+
+    public static GeoPoint transformBD09ToWGS84(double longitude, double latitude) {
+        return new GeoPoint(longitude, latitude).transformBD09ToWGS84();
+    }
+
+    /**
+     * WGS84 转 百度坐标BD09
+     *
+     * @param point WGS84坐标点
+     * @return BD09 坐标点
+     */
+    public static GeoPoint transformWGS84ToBD09(GeoPoint point) {
+        return point.transformWGS84ToBD09();
+    }
+
+    public static GeoPoint transformWGS84ToBD09(double longitude, double latitude) {
+        return new GeoPoint(longitude, latitude).transformWGS84ToBD09();
+    }
 
 }

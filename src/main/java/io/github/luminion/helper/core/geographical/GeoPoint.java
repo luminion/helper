@@ -21,7 +21,6 @@ public class GeoPoint {
     private static final double PI = 3.1415926535897932384626;
     private static final double a = 6378245.0;
     private static final double ee = 0.00669342162296594323;
-    private static final double earth = 6378.137;
 
     /**
      * 经度

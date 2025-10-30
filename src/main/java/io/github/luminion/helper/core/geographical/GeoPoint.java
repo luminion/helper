@@ -11,6 +11,8 @@ import java.util.List;
  * 坐标点
  *
  * @author luminion
+ * @link <a href="https://blog.csdn.net/zheng12tian/article/details/40617445">交点法判断点是否在多边形内</a>
+ * @link <a href="https://blog.csdn.net/a704397849/article/details/121133616">坐标系转化</a>
  */
 @Getter
 @EqualsAndHashCode
@@ -141,7 +143,6 @@ public class GeoPoint {
      *
      * @param boundaryPoints 边界点
      * @return boolean
-     * @link <a href="https://blog.csdn.net/zheng12tian/article/details/40617445">原文链接</a>
      */
     public boolean isInPolygon(List<GeoPoint> boundaryPoints) {
         return isInPolygon(boundaryPoints.toArray(new GeoPoint[0]));
@@ -171,9 +172,9 @@ public class GeoPoint {
                 return true;
             }
         }
-        
+
         // 基本思想是利用X轴射线法，计算射线与多边形各边的交点，如果是偶数，则点在多边形外，否则在多边形内。还会考虑一些特殊情况，如点在多边形顶点上， 点在多边形边上等特殊情况。
-       
+
         // X轴射线与多边形的交点数
         int intersectPointCount = 0;
         // X轴射线与多边形的交点权值
@@ -255,7 +256,7 @@ public class GeoPoint {
             return false;
         }
         // 奇数在多边形内
-        else { 
+        else {
             return true;
         }
     }
@@ -312,6 +313,24 @@ public class GeoPoint {
         boolean b4 = this.getLatitude() <= northEastPoint.getLatitude();
         return b && b3 && b2 && b4;
     }
+
+
+    /**
+     * 百度坐标（BD09）转 GCJ02
+     *
+     * @return GCJ02 坐标点
+     */
+    public GeoPoint transformBD09ToGCJ02() {
+        GeoPoint southWestPoint = null;
+        double x = this.longitude - 0.0065;
+        double y = this.latitude - 0.006;
+        double z = Math.sqrt(x * x + y * y) - 0.00002 * Math.sin(y * x_PI);
+        double theta = Math.atan2(y, x) - 0.000003 * Math.cos(x * x_PI);
+        double gcj_lng = z * Math.cos(theta);
+        double gcj_lat = z * Math.sin(theta);
+        return new GeoPoint(gcj_lng, gcj_lat);
+    }
+    
 
 
 }

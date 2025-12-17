@@ -1,2 +1,2 @@
 org.springframework.boot.autoconfigure.EnableAutoConfiguration=\
-  io.github.luminion.helper.spring.SpringKit
+  io.github.luminion.helper.spring.SpringContextUtils

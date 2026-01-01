@@ -2,10 +2,7 @@ package io.github.luminion.helper.core;
 
 import lombok.RequiredArgsConstructor;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -43,9 +40,16 @@ public class TreeHelper<T, R> {
      * @return {@link List } 源列表
      */
     public List<T> buildRelation(Collection<? extends T> elements) {
-        ArrayList<T> ts = new ArrayList<>(elements);
-        ts.forEach(e -> childrenSetter.accept(e, findDirectChildrenByNode(ts, e)));
-        return ts;
+        Map<R, List<T>> parentMap = elements.stream()
+                .collect(Collectors.groupingBy(parentIdGetter));
+        elements.forEach(e -> {
+            R myId = idGetter.apply(e);
+            List<T> children = parentMap.get(myId);
+            if (children != null) {
+                childrenSetter.accept(e, children);
+            }
+        });
+        return new ArrayList<>(elements);
     }
 
     /**

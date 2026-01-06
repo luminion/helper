@@ -150,8 +150,7 @@ public class DateTimeHelper {
     public String toString() {
         return toLocalDateTime().format(DATE_TIME_FORMATTER);
     }
-
-
+    
     public String toDateTimeString() {
         return toLocalDateTime().format(DATE_TIME_FORMATTER);
     }

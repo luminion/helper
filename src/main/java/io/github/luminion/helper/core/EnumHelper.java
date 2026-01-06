@@ -14,10 +14,10 @@ import java.util.function.Function;
  * @author luminion
  */
 @RequiredArgsConstructor
-public class EnumHelper<E extends Enum<E>> {
+public class EnumHelper<E extends Enum<E>, K, V> {
     private final EnumSet<E> enums;
-    private final Function<E, Integer> keyGetter;
-    private final Function<E, String> valueGetter;
+    private final Function<E, K> keyGetter;
+    private final Function<E, V> valueGetter;
 
     /**
      * 创建一个枚举助手实例
@@ -28,9 +28,9 @@ public class EnumHelper<E extends Enum<E>> {
      * @param <E>         枚举类型
      * @return 枚举助手实例
      */
-    public static <E extends Enum<E>> EnumHelper<E> of(Class<E> clazz, 
-                                                       Function<E, Integer> keyGetter, 
-                                                       Function<E, String> valueGetter) {
+    public static <E extends Enum<E>, K, V> EnumHelper<E, K, V> of(Class<E> clazz,
+                                                                   Function<E, K> keyGetter,
+                                                                   Function<E, V> valueGetter) {
         return new EnumHelper<>(EnumSet.allOf(clazz), keyGetter, valueGetter);
     }
 
@@ -40,12 +40,12 @@ public class EnumHelper<E extends Enum<E>> {
      * @param key key
      * @return 枚举实例
      */
-    public E getEnum(Integer key) {
+    public E getEnumByKey(K key) {
         if (key == null) {
             return null;
         }
         for (E e : enums) {
-            Integer apply = keyGetter.apply(e);
+            K apply = keyGetter.apply(e);
             if (Objects.equals(key, apply)) {
                 return e;
             }
@@ -59,12 +59,12 @@ public class EnumHelper<E extends Enum<E>> {
      * @param value value
      * @return 枚举实例
      */
-    public E getEnum(String value) {
+    public E getEnumByValue(V value) {
         if (value == null) {
             return null;
         }
         for (E e : enums) {
-            String apply = valueGetter.apply(e);
+            V apply = valueGetter.apply(e);
             if (Objects.equals(value, apply)) {
                 return e;
             }
@@ -78,11 +78,11 @@ public class EnumHelper<E extends Enum<E>> {
      * @param key key
      * @return value
      */
-    public String getValue(Integer key) {
+    public V getValue(K key) {
         if (key == null) {
             return null;
         }
-        E e = getEnum(key);
+        E e = getEnumByKey(key);
         if (e != null) {
             return valueGetter.apply(e);
         }
@@ -95,11 +95,11 @@ public class EnumHelper<E extends Enum<E>> {
      * @param value value
      * @return key
      */
-    public Integer getKey(String value) {
+    public K getKey(V value) {
         if (value == null) {
             return null;
         }
-        E e = getEnum(value);
+        E e = getEnumByValue(value);
         if (e != null) {
             return keyGetter.apply(e);
         }
@@ -112,8 +112,8 @@ public class EnumHelper<E extends Enum<E>> {
      *
      * @return key-value构成的map
      */
-    public Map<Integer, String> toMap() {
-        Map<Integer, String> map = new HashMap<>();
+    public Map<K, V> toMap() {
+        Map<K, V> map = new HashMap<>();
         for (E e : enums) {
             map.put(keyGetter.apply(e), valueGetter.apply(e));
         }

@@ -13,11 +13,13 @@ import java.util.Date;
  */
 @RequiredArgsConstructor
 public class DateTimeHelper {
-//    public static final String PATTERN = "yyyy-MM-dd HH:mm:ss";
+    public static final String PATTERN = "yyyy-MM-dd HH:mm:ss";
+    public static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern(PATTERN);
     private final ZonedDateTime zonedDateTime;
 
     /**
      * 获取当前时间
+     *
      * @return {@link DateTimeHelper}
      */
     public static DateTimeHelper now() {
@@ -26,6 +28,7 @@ public class DateTimeHelper {
 
     /**
      * 根据 {@link LocalDateTime} 创建
+     *
      * @param localDateTime {@link LocalDateTime}
      * @return {@link DateTimeHelper}
      */
@@ -35,6 +38,7 @@ public class DateTimeHelper {
 
     /**
      * 根据 {@link LocalDate} 创建
+     *
      * @param localDate {@link LocalDate}
      * @return {@link DateTimeHelper}
      */
@@ -44,6 +48,7 @@ public class DateTimeHelper {
 
     /**
      * 根据 {@link LocalTime} 创建
+     *
      * @param localTime {@link LocalTime}
      * @return {@link DateTimeHelper}
      */
@@ -53,6 +58,7 @@ public class DateTimeHelper {
 
     /**
      * 根据 {@link Date} 创建
+     *
      * @param date {@link Date}
      * @return {@link DateTimeHelper}
      */
@@ -62,6 +68,7 @@ public class DateTimeHelper {
 
     /**
      * 根据纪元秒创建
+     *
      * @param epochSecond 从 1970-01-01T00:00:00Z 开始的秒数
      * @return {@link DateTimeHelper}
      */
@@ -71,6 +78,7 @@ public class DateTimeHelper {
 
     /**
      * 根据纪元毫秒创建
+     *
      * @param epochMilli 从 1970-01-01T00:00:00Z 开始的毫秒数
      * @return {@link DateTimeHelper}
      */
@@ -80,6 +88,7 @@ public class DateTimeHelper {
 
     /**
      * 根据纪元日创建
+     *
      * @param epochDay 从 1970-01-01 开始的天数
      * @return {@link DateTimeHelper}
      */
@@ -89,6 +98,7 @@ public class DateTimeHelper {
 
     /**
      * 转为 {@link LocalDateTime}
+     *
      * @return {@link LocalDateTime}
      */
     public LocalDateTime toLocalDateTime() {
@@ -97,6 +107,7 @@ public class DateTimeHelper {
 
     /**
      * 转为 {@link LocalDate}
+     *
      * @return {@link LocalDate}
      */
     public LocalDate toLocalDate() {
@@ -105,6 +116,7 @@ public class DateTimeHelper {
 
     /**
      * 转为 {@link LocalTime}
+     *
      * @return {@link LocalTime}
      */
     public LocalTime toLocalTime() {
@@ -113,6 +125,7 @@ public class DateTimeHelper {
 
     /**
      * 转为纪元秒
+     *
      * @return 从 1970-01-01T00:00:00Z 开始的秒数
      */
     public long toEpochSecond() {
@@ -121,6 +134,7 @@ public class DateTimeHelper {
 
     /**
      * 转为纪元毫秒
+     *
      * @return 从 1970-01-01T00:00:00Z 开始的毫秒数
      */
     public long toEpochMilli() {
@@ -129,10 +143,24 @@ public class DateTimeHelper {
 
     /**
      * 转为字符串
+     *
      * @return {@link String}
      */
     @Override
     public String toString() {
-        return toLocalDateTime().format(DateTimeFormatter.ISO_DATE_TIME);
+        return toLocalDateTime().format(DATE_TIME_FORMATTER);
+    }
+
+
+    public String toDateTimeString() {
+        return toLocalDateTime().format(DATE_TIME_FORMATTER);
+    }
+
+    public String toTimeString() {
+        return toLocalTime().toString();
+    }
+
+    public String toDateString() {
+        return toLocalDate().toString();
     }
 }

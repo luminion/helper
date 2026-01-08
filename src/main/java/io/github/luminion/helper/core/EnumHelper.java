@@ -20,13 +20,13 @@ public class EnumHelper<E extends Enum<E>, K> {
      * 创建一个枚举助手实例
      *
      * @param clazz       枚举类
-     * @param keyGetter   获取key的方法
+     * @param getter      获取指定属性的方法
      * @param <E>         枚举类型
      * @return 枚举助手实例
      */
     public static <E extends Enum<E>, K> EnumHelper<E, K> of(Class<E> clazz,
-                                                             Function<E, K> keyGetter) {
-        return new EnumHelper<>(EnumSet.allOf(clazz), keyGetter);
+                                                             Function<E, K> getter) {
+        return new EnumHelper<>(EnumSet.allOf(clazz), getter);
     }
 
     /**

@@ -188,8 +188,4 @@ public abstract class ReflectHelper {
         return target.getClass().getMethod(methodName).invoke(target, args);
     }
 
-    
-    public interface SFunc extends Serializable {
-        
-    }
 }

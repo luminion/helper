@@ -1,12 +1,12 @@
 package io.github.luminion.helper.excel;
 
-import com.alibaba.excel.converters.Converter;
-import com.alibaba.excel.converters.DefaultConverterLoader;
-import com.alibaba.excel.enums.CellDataTypeEnum;
-import com.alibaba.excel.metadata.GlobalConfiguration;
-import com.alibaba.excel.metadata.data.ReadCellData;
-import com.alibaba.excel.metadata.data.WriteCellData;
-import com.alibaba.excel.metadata.property.ExcelContentProperty;
+import cn.idev.excel.converters.Converter;
+import cn.idev.excel.converters.DefaultConverterLoader;
+import cn.idev.excel.enums.CellDataTypeEnum;
+import cn.idev.excel.metadata.GlobalConfiguration;
+import cn.idev.excel.metadata.data.ReadCellData;
+import cn.idev.excel.metadata.data.WriteCellData;
+import cn.idev.excel.metadata.property.ExcelContentProperty;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 
@@ -27,11 +27,11 @@ import java.util.List;
 
 /**
  * 为Excel的转换器进行注册
- *
+ * 
  * @author luminion
  */
 @Slf4j
-public abstract class EasyExcelConverterRegister {
+public abstract class FastExcelHelper {
     private static final Class<?> CONVERTER_CLASS = Converter.class;
     private static final Class<?> CONVERTER_LOADER_CLASS = DefaultConverterLoader.class;
 

@@ -14,8 +14,7 @@ import java.nio.channels.FileChannel;
  * @author luminion
  */
 @Slf4j
-public abstract class FileKit {
-
+public abstract class FileHelper {
 
     /**
      * 删除目标文件夹内及其子文件夹所有指定文件
@@ -79,8 +78,7 @@ public abstract class FileKit {
                 FileInputStream is = new FileInputStream(source);
                 FileOutputStream os = new FileOutputStream(dest);
                 FileChannel inputChannel = is.getChannel();
-                FileChannel outputChannel = os.getChannel()
-        ) {
+                FileChannel outputChannel = os.getChannel()) {
             outputChannel.transferFrom(inputChannel, 0, inputChannel.size());
         }
     }
@@ -92,8 +90,11 @@ public abstract class FileKit {
      * @param destDir   输出文件夹
      */
     public static void copyDir(File sourceDir, File destDir) {
-        if (sourceDir == null || !sourceDir.isDirectory() || destDir == null || !destDir.isDirectory()) {
+        if (sourceDir == null || !sourceDir.isDirectory() || destDir == null) {
             throw new IllegalArgumentException("源文件或目标不合法");
+        }
+        if (destDir.exists() && !destDir.isDirectory()) {
+            throw new IllegalArgumentException("目标必须是文件夹");
         }
         if (!destDir.exists()) {
             destDir.mkdirs();

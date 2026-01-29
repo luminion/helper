@@ -12,6 +12,9 @@ import com.fasterxml.jackson.datatype.jsr310.deser.LocalTimeDeserializer;
 import com.fasterxml.jackson.datatype.jsr310.ser.LocalDateSerializer;
 import com.fasterxml.jackson.datatype.jsr310.ser.LocalDateTimeSerializer;
 import com.fasterxml.jackson.datatype.jsr310.ser.LocalTimeSerializer;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+import lombok.SneakyThrows;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -26,13 +29,14 @@ import java.util.Map;
 import java.util.TimeZone;
 
 /**
- * 简化Jackson的常用Api
- *
  * @author luminion
  */
-public abstract class JsonKit {
+@RequiredArgsConstructor
+public class ObjectMapperHelper {
+    private static ObjectMapperHelper instance;
+    @Getter
+    private final ObjectMapper objectMapper;
 
-    private static JsonHelper jsonHelper;
 
     static {
         ObjectMapper objectMapper = new ObjectMapper();
@@ -81,10 +85,10 @@ public abstract class JsonKit {
 
         // 6. 注册模块
         objectMapper.registerModule(customModule);
-        
-        jsonHelper = JsonHelper.of(objectMapper);
+
+        instance = ObjectMapperHelper.of(objectMapper);
     }
-    
+
     /**
      * 允许自定义或替换全局的 ObjectMapper 实例。
      * <p>
@@ -93,16 +97,30 @@ public abstract class JsonKit {
      * @param objectMapper 要使用的 ObjectMapper 实例
      */
     public static void objectMapper(ObjectMapper objectMapper) {
-        jsonHelper = JsonHelper.of(objectMapper);
+        instance = ObjectMapperHelper.of(objectMapper);
     }
-    
+
     /**
      * 获取全局使用的 ObjectMapper 实例。
      *
      * @return 全局使用的 ObjectMapper 实例
      */
     public static ObjectMapper objectMapper() {
-        return jsonHelper.getObjectMapper();
+        return instance.getObjectMapper();
+    }
+    
+    /**
+     * 创建一个 ObjectMapperHelper 实例。
+     *
+     * @param objectMapper 用于解析 JSON 的 ObjectMapper 实例
+     * @return 一个 ObjectMapperHelper 实例
+     */
+    public static ObjectMapperHelper of(ObjectMapper objectMapper){
+        return new ObjectMapperHelper(objectMapper);
+    }
+
+    public static ObjectMapperHelper of(){
+        return instance;
     }
 
     /**
@@ -111,8 +129,9 @@ public abstract class JsonKit {
      * @param obj 要序列化的对象
      * @return JSON 字符串
      */
-    public static String toJson(Object obj) {
-        return jsonHelper.toJson(obj);
+    @SneakyThrows
+    public String toJson(Object obj) {
+        return objectMapper.writeValueAsString(obj);
     }
 
     /**
@@ -121,8 +140,9 @@ public abstract class JsonKit {
      * @param obj 要序列化的对象
      * @return 格式化的 JSON 字符串
      */
-    public static String toPrettyJson(Object obj) {
-        return jsonHelper.toPrettyJson(obj);
+    @SneakyThrows
+    public String toPrettyJson(Object obj) {
+        return objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(obj);
     }
 
     /**
@@ -133,8 +153,9 @@ public abstract class JsonKit {
      * @param <T>   目标对象的类型
      * @return 目标类的实例
      */
-    public static <T> T parseObject(String json, Class<T> clazz) {
-        return jsonHelper.parseObject(json, clazz);
+    @SneakyThrows
+    public <T> T parseObject(String json, Class<T> clazz) {
+        return objectMapper.readValue(json, clazz);
     }
 
     /**
@@ -145,8 +166,9 @@ public abstract class JsonKit {
      * @param <T>           目标泛型类型
      * @return 目标类型的实例
      */
-    public static <T> T parseObject(String json, TypeReference<T> typeReference) {
-        return jsonHelper.parseObject(json, typeReference);
+    @SneakyThrows
+    public <T> T parseObject(String json, TypeReference<T> typeReference) {
+        return objectMapper.readValue(json, typeReference);
     }
 
     /**
@@ -155,8 +177,9 @@ public abstract class JsonKit {
      * @param json JSON 对象字符串
      * @return 代表该 JSON 对象的 Map
      */
-    public static Map<String, Object> parseObject(String json) {
-        return jsonHelper.parseObject(json);
+    @SneakyThrows
+    public Map<String, Object> parseObject(String json) {
+        return parseObject(json, new TypeReference<Map<String, Object>>() {});
     }
 
     /**
@@ -165,8 +188,9 @@ public abstract class JsonKit {
      * @param json JSON 数组字符串
      * @return 对象的列表
      */
-    public static List<Object> parseArray(String json) {
-        return jsonHelper.parseArray(json);
+    @SneakyThrows
+    public List<Object> parseArray(String json) {
+        return parseObject(json, new TypeReference<List<Object>>() {});
     }
 
     /**
@@ -177,7 +201,10 @@ public abstract class JsonKit {
      * @param <T>   列表中元素的类型
      * @return 指定类型的对象列表
      */
-    public static <T> List<T> parseArray(String json, Class<T> clazz) {
-        return jsonHelper.parseArray(json, clazz);
+    @SneakyThrows
+    public <T> List<T> parseArray(String json, Class<T> clazz) {
+        return objectMapper.readValue(json, objectMapper.getTypeFactory().constructCollectionType(List.class, clazz));
     }
+    
+    
 }

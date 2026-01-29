@@ -3,6 +3,7 @@ package io.github.luminion.helper.core;
 import com.google.common.base.Objects;
 import lombok.SneakyThrows;
 
+import java.io.Serializable;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.util.Collection;
@@ -15,7 +16,7 @@ import java.util.concurrent.ConcurrentHashMap;
  *
  * @author luminion
  */
-public abstract class ReflectKit {
+public abstract class ReflectHelper {
 
     private static final Map<Class<?>, Map<String, Field>> FIELD_MAP_CACHE = new ConcurrentHashMap<>();
 
@@ -59,8 +60,9 @@ public abstract class ReflectKit {
             return stringFieldMap;
         }
         Map<String, Field> map = new HashMap<>();
-        while (clazz != null && Object.class != clazz && !clazz.isInterface()) {
-            Field[] fields = clazz.getDeclaredFields();
+        Class<?> currentClass = clazz;
+        while (currentClass != null && Object.class != currentClass && !currentClass.isInterface()) {
+            Field[] fields = currentClass.getDeclaredFields();
             for (Field field : fields) {
                 field.setAccessible(true);
                 if (isSpecialModifier(field.getModifiers())) {
@@ -68,7 +70,7 @@ public abstract class ReflectKit {
                 }
                 map.putIfAbsent(field.getName(), field);
             }
-            clazz = clazz.getSuperclass();
+            currentClass = currentClass.getSuperclass();
         }
         FIELD_MAP_CACHE.put(clazz, map);
         return map;
@@ -186,4 +188,8 @@ public abstract class ReflectKit {
         return target.getClass().getMethod(methodName).invoke(target, args);
     }
 
+    
+    public interface SFunc extends Serializable {
+        
+    }
 }

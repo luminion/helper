@@ -21,16 +21,16 @@ import java.util.Map;
  * @author luminion
  */
 @Component
-public class SpringContextUtils implements BeanFactoryPostProcessor, ApplicationContextAware {
+public class SpringContextHelper implements BeanFactoryPostProcessor, ApplicationContextAware {
     private static ConfigurableListableBeanFactory beanFactory;
     private static ApplicationContext applicationContext;
 
     public void postProcessBeanFactory(ConfigurableListableBeanFactory beanFactory) throws BeansException {
-        SpringContextUtils.beanFactory = beanFactory;
+        SpringContextHelper.beanFactory = beanFactory;
     }
 
     public void setApplicationContext(ApplicationContext applicationContext) {
-        SpringContextUtils.applicationContext = applicationContext;
+        SpringContextHelper.applicationContext = applicationContext;
     }
 
     public static ApplicationContext getApplicationContext() {

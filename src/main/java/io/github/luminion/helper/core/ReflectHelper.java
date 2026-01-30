@@ -1,14 +1,13 @@
 package io.github.luminion.helper.core;
 
-import com.google.common.base.Objects;
 import lombok.SneakyThrows;
 
-import java.io.Serializable;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -19,7 +18,6 @@ import java.util.concurrent.ConcurrentHashMap;
 public abstract class ReflectHelper {
 
     private static final Map<Class<?>, Map<String, Field>> FIELD_MAP_CACHE = new ConcurrentHashMap<>();
-
 
     /**
      * 是否为java自带的核心类
@@ -87,10 +85,8 @@ public abstract class ReflectHelper {
                 || Modifier.isFinal(modifiers)
                 || Modifier.isNative(modifiers)
                 || Modifier.isVolatile(modifiers)
-                || Modifier.isTransient(modifiers)
-                ;
+                || Modifier.isTransient(modifiers);
     }
-
 
     /**
      * 复制属性
@@ -101,12 +97,14 @@ public abstract class ReflectHelper {
      */
     @SneakyThrows
     public static <T> T copyFieldProperties(Object source, T target) {
-        if (source == null || target == null || source.equals(target)) return target;
+        if (source == null || target == null || source.equals(target))
+            return target;
         Map<String, Field> sourceMap = fieldMap(source.getClass());
         Map<String, Field> targetMap = fieldMap(target.getClass());
         for (Field field : sourceMap.values()) {
             Object o = field.get(source);
-            if (o == null) continue;
+            if (o == null)
+                continue;
             Field targetFiled = targetMap.get(field.getName());
             if (targetFiled != null && targetFiled.getType().isAssignableFrom(field.getType())) {
                 targetFiled.set(target, o);
@@ -114,7 +112,6 @@ public abstract class ReflectHelper {
         }
         return target;
     }
-
 
     /**
      * 对象转map
@@ -124,13 +121,16 @@ public abstract class ReflectHelper {
      */
     @SneakyThrows
     public static Map<?, ?> objectToMap(Object source) {
-        if (source == null) return null;
-        if (source instanceof Map) return (Map<?, ?>) source;
+        if (source == null)
+            return null;
+        if (source instanceof Map)
+            return (Map<?, ?>) source;
         HashMap<String, Object> map = new HashMap<>();
         Collection<Field> fields = fieldMap(source.getClass()).values();
         for (Field field : fields) {
             Object o = field.get(source);
-            if (o == null) continue;
+            if (o == null)
+                continue;
             map.put(field.getName(), o);
         }
         return map;
@@ -145,7 +145,6 @@ public abstract class ReflectHelper {
     public static <T> T toTarget(Object source, Class<T> clazz) {
         return copyFieldProperties(source, newInstance(clazz));
     }
-
 
     /**
      * 创建两个对象的差异属性(来源对象为null的属性不会判断)
@@ -167,7 +166,7 @@ public abstract class ReflectHelper {
         for (Field field : values) {
             Object o = field.get(source);
             Object o1 = field.get(target);
-            if (Objects.equal(o,o1)) {
+            if (Objects.equals(o, o1)) {
                 continue;
             }
             field.set(instance, o);
@@ -184,7 +183,7 @@ public abstract class ReflectHelper {
      * @return {@link Object }
      */
     @SneakyThrows
-    public static Object invokePublicMethod(Object target, String methodName, Object... args){
+    public static Object invokePublicMethod(Object target, String methodName, Object... args) {
         return target.getClass().getMethod(methodName).invoke(target, args);
     }
 

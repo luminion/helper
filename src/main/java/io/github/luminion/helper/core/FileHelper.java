@@ -37,7 +37,10 @@ public abstract class FileHelper {
             String name = source.getName();
             if (name.matches(pattern)) {
                 log.debug("删除文件：{}", source.getAbsolutePath());
-                source.delete();
+                boolean deleted = source.delete();
+                if (!deleted) {
+                    log.warn("文件删除失败：{}", source.getAbsolutePath());
+                }
             }
         }
     }
@@ -59,7 +62,10 @@ public abstract class FileHelper {
                 }
             }
         } else {
-            target.delete();
+            boolean deleted = target.delete();
+            if (!deleted) {
+                log.warn("文件删除失败：{}", target.getAbsolutePath());
+            }
         }
     }
 

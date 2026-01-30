@@ -25,7 +25,6 @@ public class MinioHelper {
 
     public MinioHelper(String endpoint, String accessKey, String secretKey) {
         this.minioClient = MinioClient.builder().endpoint(endpoint).credentials(accessKey, secretKey).build();
-        this.defaultBucket = defaultBucket;
         init();
     }
 
@@ -81,7 +80,7 @@ public class MinioHelper {
                             .object(filename)
                             // The field file exceeds its maximum permitted size of 1048576 bytes
                             .stream(is, -1, 10485760)
-                            //                        .stream(is, is.available(), -1)
+                            // .stream(is, is.available(), -1)
                             .build()
             );
             return put;
@@ -98,33 +97,34 @@ public class MinioHelper {
     }
 
     public ObjectWriteResponse upload(String filename, InputStream is) {
-        if (defaultBucket == null) throw new IllegalStateException("defaultBucket is null, please set defaultBucket");
+        if (defaultBucket == null)
+            throw new IllegalStateException("defaultBucket is null, please set defaultBucket");
         return upload(defaultBucket, filename, is);
     }
-
 
     public boolean fileExists(String bucketName, String filename) {
         StatObjectResponse statObjectResponse = null;
         try {
-            statObjectResponse = minioClient.statObject(StatObjectArgs.builder().bucket(bucketName).object(filename).build());
+            statObjectResponse = minioClient
+                    .statObject(StatObjectArgs.builder().bucket(bucketName).object(filename).build());
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
-        System.out.println(statObjectResponse);
+        log.debug("statObjectResponse: {}", statObjectResponse);
         return statObjectResponse.size() > 0;
     }
 
     public boolean fileExists(String filename) {
-        if (defaultBucket == null) throw new IllegalStateException("defaultBucket is null, please set defaultBucket");
+        if (defaultBucket == null)
+            throw new IllegalStateException("defaultBucket is null, please set defaultBucket");
         return fileExists(defaultBucket, filename);
     }
 
-
     public boolean download(String bucketName, String filename, OutputStream os) {
         try (InputStream is = minioClient.getObject(GetObjectArgs.builder()
-                                     .bucket(bucketName)
-                                     .object(filename)
-                                     .build())) {
+                .bucket(bucketName)
+                .object(filename)
+                .build())) {
             byte[] buf = new byte[16384];
             int bytesRead;
             while ((bytesRead = is.read(buf, 0, buf.length)) >= 0) {
@@ -147,9 +147,9 @@ public class MinioHelper {
     }
 
     public boolean download(String filename, OutputStream os) {
-        if (defaultBucket == null) throw new IllegalStateException("defaultBucket is null, please set defaultBucket");
+        if (defaultBucket == null)
+            throw new IllegalStateException("defaultBucket is null, please set defaultBucket");
         return download(defaultBucket, filename, os);
     }
-
 
 }

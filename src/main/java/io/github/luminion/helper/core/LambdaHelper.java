@@ -97,8 +97,5 @@ public abstract class LambdaHelper {
         return Introspector.decapitalize(name);
     }
 
-    @FunctionalInterface
-    public interface SFunc<T, R> extends Function<T, R>, Serializable {
-
-    }
+  
 }

@@ -15,6 +15,10 @@ import java.util.stream.Collectors;
  */
 @RequiredArgsConstructor
 public class TreeHelper<T, R> {
+    /**
+     * 最大深度
+     */
+    public static int maxDepth  = 100;
     private final Function<T, R> idGetter;
     private final Function<T, R> parentIdGetter;
     private final BiConsumer<T, ? super List<T>> childrenSetter;
@@ -22,14 +26,14 @@ public class TreeHelper<T, R> {
     /**
      * 创建树助手
      *
-     * @param idGetter           id getter
-     * @param parentIdGetter     父id getter
-     * @param childrenSetter     子元素setter
+     * @param idGetter       id getter
+     * @param parentIdGetter 父id getter
+     * @param childrenSetter 子元素setter
      * @return {@link TreeHelper } 对应的树助手
      */
-    public static <T, R> TreeHelper<T, R> of(Function<T, R> idGetter, 
-                                             Function<T, R> parentIdGetter, 
-                                             BiConsumer<T, ? super List<T>> childrenSetter) {
+    public static <T, R> TreeHelper<T, R> of(Function<T, R> idGetter,
+            Function<T, R> parentIdGetter,
+            BiConsumer<T, ? super List<T>> childrenSetter) {
         return new TreeHelper<>(idGetter, parentIdGetter, childrenSetter);
     }
 
@@ -55,8 +59,8 @@ public class TreeHelper<T, R> {
     /**
      * 构建根目录树
      *
-     * @param elements  元素
-     * @param filter 根目录元素过滤规则
+     * @param elements 元素
+     * @param filter   根目录元素过滤规则
      * @return {@link List } 根目录元素
      */
     public List<T> treeRoot(Collection<? extends T> elements, Predicate<? super T> filter) {
@@ -166,12 +170,25 @@ public class TreeHelper<T, R> {
         if (currentNode == null) {
             return parents;
         }
+        // 使用Set记录已访问的节点ID，防止循环引用
+        Set<R> visited = new HashSet<>();
+        visited.add(id);
+
         R parentId = parentIdGetter.apply(currentNode);
-        while (parentId != null) {
+        int depth = 0;
+
+        while (parentId != null && depth < maxDepth) {
+            // 检测循环引用
+            if (visited.contains(parentId)) {
+                break;
+            }
+            visited.add(parentId);
+
             for (T element : elements) {
                 if (Objects.equals(parentId, idGetter.apply(element))) {
                     parents.add(element);
                     parentId = parentIdGetter.apply(element);
+                    depth++;
                     break;
                 }
             }

@@ -19,13 +19,13 @@ public class EnumHelper<E extends Enum<E>, K> {
     /**
      * 创建一个枚举助手实例
      *
-     * @param clazz       枚举类
-     * @param getter      获取指定属性的方法
-     * @param <E>         枚举类型
+     * @param clazz  枚举类
+     * @param getter 获取指定属性的方法
+     * @param <E>    枚举类型
      * @return 枚举助手实例
      */
-    public static <E extends Enum<E>, K> EnumHelper<E, K> of(Class<E> clazz,
-                                                             Function<E, K> getter) {
+    public static <E extends Enum<E>, K> EnumHelper<E, K> of(SFunc<E, K> getter) {
+        Class<E> clazz = LambdaHelper.resolveGetterClass(getter);
         return new EnumHelper<>(EnumSet.allOf(clazz), getter);
     }
 
@@ -35,7 +35,7 @@ public class EnumHelper<E extends Enum<E>, K> {
      * @param key key
      * @return 枚举实例
      */
-    public E get(K key) {
+    public E resolve(K key) {
         if (key == null) {
             return null;
         }
@@ -44,6 +44,16 @@ public class EnumHelper<E extends Enum<E>, K> {
             if (Objects.equals(key, apply)) {
                 return e;
             }
+        }
+        return null;
+    }
+
+
+    public static <E extends Enum<E>, K, V> V getValue(K k, SFunc<E, K> keyGetter, SFunc<E, V> valueGetter) {
+        EnumHelper<E, K> helper = EnumHelper.of(keyGetter);
+        E resolve = helper.resolve(k);
+        if (resolve != null) {
+            return valueGetter.apply(resolve);
         }
         return null;
     }

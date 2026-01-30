@@ -31,7 +31,6 @@ public class HttpHelper {
     protected String body;
     protected int responseCode = -1;
 
-
     public static HttpHelper get(String url) {
         return new HttpHelper(url, "GET");
     }
@@ -91,7 +90,6 @@ public class HttpHelper {
         return this;
     }
 
-
     public HttpHelper charset(Charset charset) {
         this.charset = charset;
         return this;
@@ -141,7 +139,6 @@ public class HttpHelper {
         return this;
     }
 
-
     @SneakyThrows
     protected HttpURLConnection execute() {
         if (executed) {
@@ -157,7 +154,7 @@ public class HttpHelper {
             if (!url.contains("?")) {
                 url += "?" + formatQueryParams(queryParams);
             } else {
-                if (url.endsWith("&")) {
+                if (!url.endsWith("&")) {
                     url += "&";
                 }
                 url += formatQueryParams(queryParams);
@@ -200,27 +197,20 @@ public class HttpHelper {
 
     @SneakyThrows
     public InputStream responseStream() {
-        HttpURLConnection execute = null;
-        try {
-            execute = execute();
-            int code = execute.getResponseCode();
-            if (code != 200) {
-                log.warn("request may execute failed , http code:{},  url:{}, body:{}", code, url, body);
-            }
-            return execute.getInputStream();
-        } finally {
-            if (execute != null) {
-                execute.disconnect();
-            }
+        HttpURLConnection execute = execute();
+        int code = execute.getResponseCode();
+        if (code != 200) {
+            log.warn("request may execute failed , http code:{},  url:{}, body:{}", code, url, body);
         }
+        return execute.getInputStream();
     }
 
     @SneakyThrows
     public String responseString(Charset charset) {
         StringBuilder sb = new StringBuilder();
         try (InputStream is = responseStream();
-             InputStreamReader isr = new InputStreamReader(is, charset);
-             BufferedReader br = new BufferedReader(isr)) {
+                InputStreamReader isr = new InputStreamReader(is, charset);
+                BufferedReader br = new BufferedReader(isr)) {
             String temp;
             while ((temp = br.readLine()) != null) {
                 sb.append(temp);

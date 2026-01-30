@@ -13,7 +13,6 @@ import java.util.regex.Pattern;
 
 import static java.time.temporal.ChronoUnit.*;
 
-
 /**
  * ffmpeg助手
  *
@@ -41,7 +40,7 @@ public class FfmpegHelper {
         this.ffprobe = ffprobe;
         this.tempMediaPath = tempMediaPath;
         this.tempMediaDir = new File(tempMediaPath);
-        if (!tempMediaDir.exists() && !tempMediaDir.isDirectory()) {
+        if (!tempMediaDir.exists()) {
             tempMediaDir.mkdirs();
         }
     }
@@ -54,45 +53,44 @@ public class FfmpegHelper {
      */
     public String commandStart(List<String> command) {
         String join = String.join(" ", command);
-        log.info("command : {}",join);
+        log.info("command : {}", join);
         ProcessBuilder builder = new ProcessBuilder();
-        //正常信息和错误信息合并输出
+        // 正常信息和错误信息合并输出
         builder.redirectErrorStream(true);
         builder.command(command);
-        //开始执行命令
+        // 开始执行命令
         Process process = null;
         StringBuilder result = new StringBuilder();
         try {
             process = builder.start();
-            //获取到执行完后的信息，那么下面的代码也是需要的
-            String line = "";
-            BufferedReader br = new BufferedReader(new InputStreamReader(process.getInputStream()));
-            while ((line = br.readLine()) != null) {
-                log.info(line);
-                result.append(line);
-                result.append("\n");
+            // 获取到执行完后的信息，那么下面的代码也是需要的
+            try (BufferedReader br = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
+                String line;
+                while ((line = br.readLine()) != null) {
+                    log.info(line);
+                    result.append(line);
+                    result.append("\n");
+                }
             }
         } catch (IOException e) {
-            log.error("execute command error ",e);
-        }finally {
+            log.error("execute command error ", e);
+        } finally {
             if (process != null) {
                 process.destroy();
             }
         }
         return result.toString();
     }
-    
+
     private void removeExisted(String filePath) {
         File file = new File(filePath);
-        if (file.exists()){
+        if (file.exists()) {
             boolean delete = file.delete();
-            if (!delete){
+            if (!delete) {
                 throw new RuntimeException("delete existed file failed : " + filePath);
             }
         }
     }
-    
-
 
     /**
      * 播放音频和视频
@@ -103,11 +101,11 @@ public class FfmpegHelper {
         List<String> command = new ArrayList<>();
         command.add(ffplay);
         command.add("-window_title");
-        String fileName = resourcesPath.substring(resourcesPath.lastIndexOf("\\") + 1);
+        String fileName = resourcesPath.substring(resourcesPath.lastIndexOf(File.separator) + 1);
         command.add(fileName);
         command.add(resourcesPath);
-        //播放完后自动退出
-        //command.add("-autoexit");
+        // 播放完后自动退出
+        // command.add("-autoexit");
         commandStart(command);
     }
 
@@ -121,13 +119,13 @@ public class FfmpegHelper {
         List<String> command = new ArrayList<>();
         command.add(ffplay);
         command.add("-window_title");
-        String fileName = resourcesPath.substring(resourcesPath.lastIndexOf("\\") + 1);
+        String fileName = resourcesPath.substring(resourcesPath.lastIndexOf(File.separator) + 1);
         command.add(fileName);
         command.add(resourcesPath);
         command.add("-loop");
         command.add(String.valueOf(loop));
-        //播放完后自动退出
-        //command.add("-autoexit");
+        // 播放完后自动退出
+        // command.add("-autoexit");
         commandStart(command);
     }
 
@@ -143,7 +141,7 @@ public class FfmpegHelper {
         List<String> command = new ArrayList<>();
         command.add(ffplay);
         command.add("-window_title");
-        String fileName = resourcesPath.substring(resourcesPath.lastIndexOf("\\") + 1);
+        String fileName = resourcesPath.substring(resourcesPath.lastIndexOf(File.separator) + 1);
         command.add(fileName);
         command.add(resourcesPath);
         command.add("-x");
@@ -152,8 +150,8 @@ public class FfmpegHelper {
         command.add(String.valueOf(height));
         command.add("-loop");
         command.add(String.valueOf(loop));
-        //播放完后自动退出
-        //command.add("-autoexit");
+        // 播放完后自动退出
+        // command.add("-autoexit");
         commandStart(command);
     }
 
@@ -163,7 +161,7 @@ public class FfmpegHelper {
      * @param videoResourcesPath 视频文件的路径
      * @param saveFilePath       保存文件路径
      */
-    public void getAudioFromVideo(String videoResourcesPath,String saveFilePath) {
+    public void getAudioFromVideo(String videoResourcesPath, String saveFilePath) {
         removeExisted(saveFilePath);
         List<String> command = new ArrayList<>();
         command.add(ffmpeg);
@@ -179,7 +177,7 @@ public class FfmpegHelper {
      * @param videoResourcesPath 视频文件的路径
      * @param saveFilePath       保存文件路径
      */
-    public void getVideoFromAudio(String videoResourcesPath,String saveFilePath) {
+    public void getVideoFromAudio(String videoResourcesPath, String saveFilePath) {
         removeExisted(saveFilePath);
         List<String> command = new ArrayList<>();
         command.add(ffmpeg);
@@ -191,7 +189,6 @@ public class FfmpegHelper {
         command.add(saveFilePath);
         commandStart(command);
     }
-
 
     /**
      * 无声视频+音频合并为一个视频
@@ -216,7 +213,6 @@ public class FfmpegHelper {
         command.add(saveFilePath);
         commandStart(command);
     }
-
 
     /**
      * 有声视频+音频合并为一个视频。
@@ -243,12 +239,11 @@ public class FfmpegHelper {
         command.add("0:a");
         command.add("-map");
         command.add("1:a");
-        //-shortest会取视频或音频两者短的一个为准，多余部分则去除不合并
-        //command.add("-shortest");
+        // -shortest会取视频或音频两者短的一个为准，多余部分则去除不合并
+        // command.add("-shortest");
         command.add(saveFilePath);
         commandStart(command);
     }
-
 
     /**
      * 多视频拼接合并(兼容较差)
@@ -258,7 +253,7 @@ public class FfmpegHelper {
      */
     public void mergeVideosUnstable(List<String> videoResourcesPathList, String saveFilePath) {
         removeExisted(saveFilePath);
-        //所有要合并的视频转换为ts格式存到videoList里
+        // 所有要合并的视频转换为ts格式存到videoList里
         List<String> videoList = new ArrayList<>();
         for (String video : videoResourcesPathList) {
             List<String> command = new ArrayList<>();
@@ -271,7 +266,8 @@ public class FfmpegHelper {
             command.add("h264_mp4toannexb");
             command.add("-f");
             command.add("mpegts");
-            String videoTempName = video.substring(video.lastIndexOf("\\") + 1, video.lastIndexOf(".")) + ".ts";
+            String videoTempName = video.substring(video.lastIndexOf(File.separator) + 1, video.lastIndexOf("."))
+                    + ".ts";
             command.add(tempMediaPath + videoTempName);
             commandStart(command);
             videoList.add(tempMediaPath + videoTempName);
@@ -302,9 +298,9 @@ public class FfmpegHelper {
      * @param videoResourcesPathList 视频文件路径的List
      * @param saveFilePath           保存文件路径
      */
-    public void mergeVideos(List<String> videoResourcesPathList,String saveFilePath) {
+    public void mergeVideos(List<String> videoResourcesPathList, String saveFilePath) {
         removeExisted(saveFilePath);
-        //将所有要合并的视频路径写入txt文件
+        // 将所有要合并的视频路径写入txt文件
         String txtFileName = UUID.randomUUID() + ".txt";
         File txt = new File(tempMediaDir, txtFileName);
         String txtAbsolutePath = txt.getAbsolutePath();
@@ -362,14 +358,13 @@ public class FfmpegHelper {
         commandStart(command);
     }
 
-
     /**
      * 视频格式转换
      *
      * @param videoResourcesPath 视频文件的路径
      * @param saveFilePath       保存文件路径(例如转化为mp4格式，saveFilePath为"e:/test.mp4",转化为avi,saveFilePath为"e:/test.avi")
      */
-    public void videoFormatConversion(String videoResourcesPath,String saveFilePath) {
+    public void videoFormatConversion(String videoResourcesPath, String saveFilePath) {
         removeExisted(saveFilePath);
         List<String> command = new ArrayList<>();
         command.add(ffmpeg);
@@ -389,7 +384,7 @@ public class FfmpegHelper {
         command.add(ffprobe);
         command.add("-i");
         command.add(videoAudioResourcesPath);
-        //调用命令行获取视频信息
+        // 调用命令行获取视频信息
         String infoStr = commandStart(command);
         String regexDuration = "Duration: (.*?), start: (.*?), bitrate: (\\d*) kb\\/s";
         String regexVideo = "Video: (.*?) tbr";
@@ -449,7 +444,8 @@ public class FfmpegHelper {
      * @param endTime                 结束时间
      * @param saveFilePath            保存文件路径
      */
-    public void cutVideoAudio(String videoAudioResourcesPath, LocalTime startTime, LocalTime endTime, String saveFilePath) {
+    public void cutVideoAudio(String videoAudioResourcesPath, LocalTime startTime, LocalTime endTime,
+            String saveFilePath) {
         removeExisted(saveFilePath);
         List<String> command = new ArrayList<>();
         command.add(ffmpeg);
@@ -471,7 +467,6 @@ public class FfmpegHelper {
         commandStart(command);
     }
 
-
     /**
      * 视频裁剪大小尺寸（根据leftDistance和topDistance确定裁剪的起始点，再根据finallywidth和finallyHeight确定裁剪的宽和长）
      * <p>
@@ -485,14 +480,15 @@ public class FfmpegHelper {
      * @param topDistance             开始裁剪的视频上边到x轴的距离（视频左下角为原点）
      * @param saveFilePath            保存文件路径
      */
-    public void cropVideoSize(String videoAudioResourcesPath, String finallyWidth, String finallyHeight, String leftDistance, String topDistance,String saveFilePath) {
+    public void cropVideoSize(String videoAudioResourcesPath, String finallyWidth, String finallyHeight,
+            String leftDistance, String topDistance, String saveFilePath) {
         removeExisted(saveFilePath);
         List<String> command = new ArrayList<>();
         command.add(ffmpeg);
         command.add("-i");
         command.add(videoAudioResourcesPath);
         command.add("-vf");
-        //获取视频信息得到原始视频长、宽
+        // 获取视频信息得到原始视频长、宽
         List<String> list = videoAudioInfo(videoAudioResourcesPath);
         String resolution = list.stream().filter(v -> v.contains("分辨率")).findFirst().get();
         String sp[] = resolution.split("x");
@@ -504,7 +500,6 @@ public class FfmpegHelper {
         command.add(saveFilePath);
         commandStart(command);
     }
-
 
     /**
      * 计算两个时间的时间差
@@ -524,7 +519,6 @@ public class FfmpegHelper {
         String secondsStr = getSeconds < 10 ? "0" + getSeconds : String.valueOf(getSeconds);
         return hourStr + ":" + minutesStr + ":" + secondsStr;
     }
-
 
     /**
      * 视频截图
@@ -547,7 +541,6 @@ public class FfmpegHelper {
         commandStart(command);
     }
 
-
     /**
      * 整个视频截图
      *
@@ -555,28 +548,30 @@ public class FfmpegHelper {
      * @param fps                截图的速度。1则表示每秒截一张；0.1则表示每十秒一张；10则表示每秒截十张图片
      * @param targetFileDirPath  文件保存的目标文件夹
      */
-    public void videoAllScreenshot(String videoResourcesPath, String fps,String targetFileDirPath) {
+    public void videoAllScreenshot(String videoResourcesPath, String fps, String targetFileDirPath) {
         List<String> command = new ArrayList<>();
         command.add(ffmpeg);
         command.add("-i");
         command.add(videoResourcesPath);
         command.add("-vf");
         command.add("fps=" + fps);
-        String fileName = videoResourcesPath.substring(videoResourcesPath.lastIndexOf("\\") + 1, videoResourcesPath.lastIndexOf("."));
+        String fileName = videoResourcesPath.substring(videoResourcesPath.lastIndexOf("\\") + 1,
+                videoResourcesPath.lastIndexOf("."));
         command.add(targetFileDirPath + fileName + "%d" + ".jpg");
         commandStart(command);
     }
 
-
     /**
      * 多图片+音频合并为视频
      *
-     * @param pictureResourcesPath 图片文件路径(数字编号和后缀不要)。如：D:\ffmpegMedia\pictur\101-你也不必耿耿于怀1.jpg 和D:\ffmpegMedia\pictur\101-你也不必耿耿于怀2.jpg。只需传D:\ffmpegMedia\pictur\101-你也不必耿耿于怀
+     * @param pictureResourcesPath 图片文件路径(数字编号和后缀不要)。如：D:\ffmpegMedia\pictur\101-你也不必耿耿于怀1.jpg
+     *                             和D:\ffmpegMedia\pictur\101-你也不必耿耿于怀2.jpg。只需传D:\ffmpegMedia\pictur\101-你也不必耿耿于怀
      * @param audioResourcesPath   音频文件的路径
      * @param fps                  帧率,每张图片的播放时间（数值越小则每张图停留的越长）。0.5则两秒播放一张，1则一秒播放一张，10则一秒播放十张
      * @param saveFilePath         保存文件路径
      */
-    public void pictureAudioMerge(String pictureResourcesPath, String audioResourcesPath,String fps,String saveFilePath) {
+    public void pictureAudioMerge(String pictureResourcesPath, String audioResourcesPath, String fps,
+            String saveFilePath) {
         removeExisted(saveFilePath);
         List<String> command = new ArrayList<>();
         command.add(ffmpeg);
@@ -584,20 +579,19 @@ public class FfmpegHelper {
         command.add("2");
         command.add("-y");
         command.add("-r");
-        //帧率
+        // 帧率
         command.add(fps);
         command.add("-i");
-        command.add(pictureResourcesPath+"%d.jpg");
+        command.add(pictureResourcesPath + "%d.jpg");
         command.add("-i");
         command.add(audioResourcesPath);
         command.add("-absf");
         command.add("aac_adtstoasc");
-        //-shortest会取视频或音频两者短的一个为准，多余部分则去除不合并
+        // -shortest会取视频或音频两者短的一个为准，多余部分则去除不合并
         command.add("-shortest");
         command.add(saveFilePath);
         commandStart(command);
     }
-
 
     /**
      * 绘制音频波形图保存.jpg后缀可改为png
@@ -615,12 +609,12 @@ public class FfmpegHelper {
         command.add("\"showwavespic=s=1280*240\"");
         command.add("-frames:v");
         command.add("1");
-        String fileName = audioResourcesPath.substring(audioResourcesPath.lastIndexOf("\\") + 1, audioResourcesPath.lastIndexOf("."));
-        //jpg可换为png
+        String fileName = audioResourcesPath.substring(audioResourcesPath.lastIndexOf("\\") + 1,
+                audioResourcesPath.lastIndexOf("."));
+        // jpg可换为png
         command.add(saveFilePath);
         commandStart(command);
     }
-
 
     /**
      * 两个音频混缩合并为一个音频（即同一时间播放两首音频）。
@@ -649,12 +643,13 @@ public class FfmpegHelper {
      * 音量参考：@link:https://blog.csdn.net/sinat_14826983/article/details/82975561
      *
      * @param audioResourcesPath1 音频1文件路径
-     * @param number1             音频1的音量，如取 0.4 表示音量是原来的40%  ，取1.5表示音量是原来的150%
+     * @param number1             音频1的音量，如取 0.4 表示音量是原来的40% ，取1.5表示音量是原来的150%
      * @param audioResourcesPath2 音频2文件路径
-     * @param number2             音频2的音量，如取 0.4 表示音量是原来的40%  ，取1.5表示音量是原来的150%
+     * @param number2             音频2的音量，如取 0.4 表示音量是原来的40% ，取1.5表示音量是原来的150%
      * @param saveFilePath        保存文件路径
      */
-    public void mergeAudios(String audioResourcesPath1,String number1, String audioResourcesPath2,String number2, String saveFilePath) {
+    public void mergeAudios(String audioResourcesPath1, String number1, String audioResourcesPath2, String number2,
+            String saveFilePath) {
         removeExisted(saveFilePath);
         List<String> command = new ArrayList<>();
         command.add(ffmpeg);
@@ -663,7 +658,8 @@ public class FfmpegHelper {
         command.add("-i");
         command.add(audioResourcesPath2);
         command.add("-filter_complex");
-        command.add("[0:a]volume=1"+number1+"[a1];[1:a]volume="+number2+"[a2];[a1][a2]amix=inputs=2:duration=longest");
+        command.add("[0:a]volume=1" + number1 + "[a1];[1:a]volume=" + number2
+                + "[a2];[a1][a2]amix=inputs=2:duration=longest");
         command.add(saveFilePath);
         commandStart(command);
     }
@@ -676,7 +672,7 @@ public class FfmpegHelper {
      * @param audioResourcesPath2 音频2文件路径
      * @param saveFilePath        保存文件路径
      */
-    public void mergeAudiosSoundtrack(String audioResourcesPath1, String audioResourcesPath2,String saveFilePath) {
+    public void mergeAudiosSoundtrack(String audioResourcesPath1, String audioResourcesPath2, String saveFilePath) {
         removeExisted(saveFilePath);
         List<String> command = new ArrayList<>();
         command.add(ffmpeg);
@@ -690,6 +686,4 @@ public class FfmpegHelper {
         commandStart(command);
     }
 
-    
-    
 }

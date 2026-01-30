@@ -1,4 +1,4 @@
-package io.github.luminion.helper.core.http;
+package io.github.luminion.helper.http;
 
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;

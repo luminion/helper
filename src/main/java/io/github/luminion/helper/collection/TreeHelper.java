@@ -1,4 +1,4 @@
-package io.github.luminion.helper.core;
+package io.github.luminion.helper.collection;
 
 import lombok.RequiredArgsConstructor;
 

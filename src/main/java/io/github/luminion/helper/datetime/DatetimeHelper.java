@@ -1,4 +1,4 @@
-package io.github.luminion.helper.core;
+package io.github.luminion.helper.datetime;
 
 import lombok.RequiredArgsConstructor;
 
@@ -12,7 +12,7 @@ import java.util.Date;
  * @author luminion
  */
 @RequiredArgsConstructor
-public class DateTimeHelper {
+public class DatetimeHelper {
     public static final String PATTERN = "yyyy-MM-dd HH:mm:ss";
     public static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern(PATTERN);
     private final ZonedDateTime zonedDateTime;
@@ -20,80 +20,80 @@ public class DateTimeHelper {
     /**
      * 获取当前时间
      *
-     * @return {@link DateTimeHelper}
+     * @return {@link DatetimeHelper}
      */
-    public static DateTimeHelper now() {
-        return new DateTimeHelper(ZonedDateTime.now());
+    public static DatetimeHelper now() {
+        return new DatetimeHelper(ZonedDateTime.now());
     }
 
     /**
      * 根据 {@link LocalDateTime} 创建
      *
      * @param localDateTime {@link LocalDateTime}
-     * @return {@link DateTimeHelper}
+     * @return {@link DatetimeHelper}
      */
-    public static DateTimeHelper of(LocalDateTime localDateTime) {
-        return new DateTimeHelper(localDateTime.atZone(ZoneId.systemDefault()));
+    public static DatetimeHelper of(LocalDateTime localDateTime) {
+        return new DatetimeHelper(localDateTime.atZone(ZoneId.systemDefault()));
     }
 
     /**
      * 根据 {@link LocalDate} 创建
      *
      * @param localDate {@link LocalDate}
-     * @return {@link DateTimeHelper}
+     * @return {@link DatetimeHelper}
      */
-    public static DateTimeHelper of(LocalDate localDate) {
-        return new DateTimeHelper(localDate.atStartOfDay(ZoneId.systemDefault()));
+    public static DatetimeHelper of(LocalDate localDate) {
+        return new DatetimeHelper(localDate.atStartOfDay(ZoneId.systemDefault()));
     }
 
     /**
      * 根据 {@link LocalTime} 创建
      *
      * @param localTime {@link LocalTime}
-     * @return {@link DateTimeHelper}
+     * @return {@link DatetimeHelper}
      */
-    public static DateTimeHelper of(LocalTime localTime) {
-        return new DateTimeHelper(localTime.atDate(LocalDate.now()).atZone(ZoneId.systemDefault()));
+    public static DatetimeHelper of(LocalTime localTime) {
+        return new DatetimeHelper(localTime.atDate(LocalDate.now()).atZone(ZoneId.systemDefault()));
     }
 
     /**
      * 根据 {@link Date} 创建
      *
      * @param date {@link Date}
-     * @return {@link DateTimeHelper}
+     * @return {@link DatetimeHelper}
      */
-    public static DateTimeHelper of(Date date) {
-        return new DateTimeHelper(ZonedDateTime.ofInstant(date.toInstant(), ZoneId.systemDefault()));
+    public static DatetimeHelper of(Date date) {
+        return new DatetimeHelper(ZonedDateTime.ofInstant(date.toInstant(), ZoneId.systemDefault()));
     }
 
     /**
      * 根据纪元秒创建
      *
      * @param epochSecond 从 1970-01-01T00:00:00Z 开始的秒数
-     * @return {@link DateTimeHelper}
+     * @return {@link DatetimeHelper}
      */
-    public static DateTimeHelper ofEpochSecond(long epochSecond) {
-        return new DateTimeHelper(ZonedDateTime.ofInstant(Instant.ofEpochSecond(epochSecond), ZoneId.systemDefault()));
+    public static DatetimeHelper ofEpochSecond(long epochSecond) {
+        return new DatetimeHelper(ZonedDateTime.ofInstant(Instant.ofEpochSecond(epochSecond), ZoneId.systemDefault()));
     }
 
     /**
      * 根据纪元毫秒创建
      *
      * @param epochMilli 从 1970-01-01T00:00:00Z 开始的毫秒数
-     * @return {@link DateTimeHelper}
+     * @return {@link DatetimeHelper}
      */
-    public static DateTimeHelper ofEpochMilli(long epochMilli) {
-        return new DateTimeHelper(ZonedDateTime.ofInstant(new Date(epochMilli).toInstant(), ZoneId.systemDefault()));
+    public static DatetimeHelper ofEpochMilli(long epochMilli) {
+        return new DatetimeHelper(ZonedDateTime.ofInstant(new Date(epochMilli).toInstant(), ZoneId.systemDefault()));
     }
 
     /**
      * 根据纪元日创建
      *
      * @param epochDay 从 1970-01-01 开始的天数
-     * @return {@link DateTimeHelper}
+     * @return {@link DatetimeHelper}
      */
-    public static DateTimeHelper ofEpochDay(long epochDay) {
-        return new DateTimeHelper(LocalDate.ofEpochDay(epochDay).atStartOfDay(ZoneId.systemDefault()));
+    public static DatetimeHelper ofEpochDay(long epochDay) {
+        return new DatetimeHelper(LocalDate.ofEpochDay(epochDay).atStartOfDay(ZoneId.systemDefault()));
     }
 
     /**

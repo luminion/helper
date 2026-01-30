@@ -1,4 +1,4 @@
-package io.github.luminion.helper.core.geographical;
+package io.github.luminion.helper.geographical;
 
 import lombok.EqualsAndHashCode;
 import lombok.Getter;

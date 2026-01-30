@@ -1,4 +1,4 @@
-package io.github.luminion.helper.jackson;
+package io.github.luminion.helper.json;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;

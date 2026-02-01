@@ -18,10 +18,18 @@ public class TreeHelper<T, R> {
     /**
      * 最大深度
      */
-    public static int maxDepth  = 100;
+    private final int maxDepth;
     private final Function<T, R> idGetter;
     private final Function<T, R> parentIdGetter;
     private final BiConsumer<T, ? super List<T>> childrenSetter;
+
+    /**
+     * 默认构造函数（兼容旧代码，默认深度100）
+     */
+    public TreeHelper(Function<T, R> idGetter, Function<T, R> parentIdGetter,
+            BiConsumer<T, ? super List<T>> childrenSetter) {
+        this(100, idGetter, parentIdGetter, childrenSetter);
+    }
 
     /**
      * 创建树助手
@@ -34,18 +42,32 @@ public class TreeHelper<T, R> {
     public static <T, R> TreeHelper<T, R> of(Function<T, R> idGetter,
             Function<T, R> parentIdGetter,
             BiConsumer<T, ? super List<T>> childrenSetter) {
-        return new TreeHelper<>(idGetter, parentIdGetter, childrenSetter);
+        return new TreeHelper<>(100, idGetter, parentIdGetter, childrenSetter);
+    }
+
+    /**
+     * 创建树助手（指定最大深度）
+     */
+    public static <T, R> TreeHelper<T, R> of(Function<T, R> idGetter,
+            Function<T, R> parentIdGetter,
+            BiConsumer<T, ? super List<T>> childrenSetter,
+            int maxDepth) {
+        return new TreeHelper<>(maxDepth, idGetter, parentIdGetter, childrenSetter);
     }
 
     /**
      * 建立关系
+     * <p>
+     * 注意：此方法会修改传入对象的 children 属性。
      *
      * @param elements 源列表
      * @return {@link List } 源列表
      */
     public List<T> buildRelation(Collection<? extends T> elements) {
         Map<R, List<T>> parentMap = elements.stream()
+                .filter(e -> parentIdGetter.apply(e) != null)
                 .collect(Collectors.groupingBy(parentIdGetter));
+
         elements.forEach(e -> {
             R myId = idGetter.apply(e);
             List<T> children = parentMap.get(myId);
@@ -76,7 +98,9 @@ public class TreeHelper<T, R> {
      * @return 指定id对应节点
      */
     public T treeById(Collection<? extends T> elements, R id) {
-        return buildRelation(elements).stream()
+        // 先构建全量关系，再提取
+        buildRelation(elements);
+        return elements.stream()
                 .filter(e -> Objects.equals(idGetter.apply(e), id))
                 .findFirst()
                 .orElse(null);
@@ -94,7 +118,7 @@ public class TreeHelper<T, R> {
     }
 
     /**
-     * 获取指定id节点对应的子集
+     * 获取指定id节点对应的直属子集
      *
      * @param elements 元素
      * @param id       id
@@ -107,40 +131,46 @@ public class TreeHelper<T, R> {
     }
 
     /**
-     * 获取当前节点对应的子集
+     * 获取当前节点对应的直属子集
      *
      * @param elements 元素
      * @param node     节点
      * @return 直接子元素列表
      */
     public List<T> findDirectChildrenByNode(Collection<? extends T> elements, T node) {
-        return elements.stream()
-                .filter(c -> Objects.equals(idGetter.apply(node), parentIdGetter.apply(c)))
-                .collect(Collectors.toList());
+        return findDirectChildrenById(elements, idGetter.apply(node));
     }
 
     /**
-     * 检索指定id对应的所有子节点
+     * 检索指定id对应的所有子节点（递归）
      *
      * @param elements 元素
      * @param id       id
      * @return 子元素列表
      */
     public List<T> findAllChildrenById(Collection<? extends T> elements, R id) {
-        ArrayList<T> all = new ArrayList<>(elements);
-        List<T> children = findDirectChildrenById(all, id);
-        if (children == null || children.isEmpty()) {
-            return new ArrayList<>();
-        }
-        ArrayList<T> result = new ArrayList<>(children);
-        for (T child : children) {
-            List<T> allChildren = this.findAllChildrenById(all, idGetter.apply(child));
-            if (allChildren == null || allChildren.isEmpty()) {
-                continue;
-            }
-            result.addAll(allChildren);
-        }
+        // 预处理：构建 ParentID -> Children 索引，复杂度 O(N)
+        Map<R, List<T>> parentMap = elements.stream()
+                .filter(e -> parentIdGetter.apply(e) != null)
+                .collect(Collectors.groupingBy(parentIdGetter));
+
+        List<T> result = new ArrayList<>();
+        collectChildrenRecursively(parentMap, id, result);
         return result;
+    }
+
+    /**
+     * 递归收集子节点
+     */
+    private void collectChildrenRecursively(Map<R, List<T>> parentMap, R currentId, List<T> result) {
+        List<T> children = parentMap.get(currentId);
+        if (children == null || children.isEmpty()) {
+            return;
+        }
+        result.addAll(children);
+        for (T child : children) {
+            collectChildrenRecursively(parentMap, idGetter.apply(child), result);
+        }
     }
 
     /**
@@ -162,14 +192,16 @@ public class TreeHelper<T, R> {
      * @return 父元素列表
      */
     public List<T> findAllParentById(Collection<? extends T> elements, R id) {
-        T currentNode = elements.stream()
-                .filter(c -> Objects.equals(id, idGetter.apply(c)))
-                .findFirst()
-                .orElse(null);
-        ArrayList<T> parents = new ArrayList<>();
+        // 预处理：构建 ID -> Node 索引，复杂度 O(N)
+        Map<R, T> idMap = elements.stream()
+                .collect(Collectors.toMap(idGetter, Function.identity(), (v1, v2) -> v1));
+
+        T currentNode = idMap.get(id);
+        List<T> parents = new ArrayList<>();
         if (currentNode == null) {
             return parents;
         }
+
         // 使用Set记录已访问的节点ID，防止循环引用
         Set<R> visited = new HashSet<>();
         visited.add(id);
@@ -184,13 +216,13 @@ public class TreeHelper<T, R> {
             }
             visited.add(parentId);
 
-            for (T element : elements) {
-                if (Objects.equals(parentId, idGetter.apply(element))) {
-                    parents.add(element);
-                    parentId = parentIdGetter.apply(element);
-                    depth++;
-                    break;
-                }
+            T parent = idMap.get(parentId);
+            if (parent != null) {
+                parents.add(parent);
+                parentId = parentIdGetter.apply(parent);
+                depth++;
+            } else {
+                break; // 找不到父节点，链条中断
             }
         }
         return parents;

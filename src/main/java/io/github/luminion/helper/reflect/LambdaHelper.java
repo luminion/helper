@@ -1,10 +1,10 @@
 package io.github.luminion.helper.reflect;
 
 import lombok.SneakyThrows;
-import org.springframework.util.ReflectionUtils;
 
 import java.beans.Introspector;
 import java.lang.invoke.SerializedLambda;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -24,19 +24,21 @@ public abstract class LambdaHelper {
      * @param getter 方法引用，例如 User::getName
      * @return SerializedLambda 实例
      */
-    @SneakyThrows
     private static <T, R> SerializedLambda resolveSerializedLambda(SFunc<T, R> getter) {
         Class<?> lambdaClass = getter.getClass();
-        SerializedLambda cached = LAMBDA_CACHE.get(lambdaClass);
-        if (cached != null) {
-            return cached;
-        }
-
-        Method writeReplaceMethod = lambdaClass.getDeclaredMethod("writeReplace");
-        writeReplaceMethod.setAccessible(true);
-        SerializedLambda lambda = (SerializedLambda) writeReplaceMethod.invoke(getter);
-        LAMBDA_CACHE.put(lambdaClass, lambda);
-        return lambda;
+        return LAMBDA_CACHE.computeIfAbsent(lambdaClass,clazz->{
+            SerializedLambda cached = LAMBDA_CACHE.get(lambdaClass);
+            if (cached != null) {
+                return cached;
+            }
+            try {
+                Method writeReplaceMethod = lambdaClass.getDeclaredMethod("writeReplace");
+                writeReplaceMethod.setAccessible(true);
+                return (SerializedLambda) writeReplaceMethod.invoke(getter);
+            } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
+                throw new RuntimeException(e);
+            }
+        });
     }
 
     /**
@@ -47,31 +49,10 @@ public abstract class LambdaHelper {
      */
     @SneakyThrows
     @SuppressWarnings("unchecked")
-    public static <T, R> Class<T> resolveGetterClass(SFunc<T, R> getter) {
+    public static <T, R> Class<T> resolveClass(SFunc<T, R> getter) {
         SerializedLambda serializedLambda = resolveSerializedLambda(getter);
         String className = serializedLambda.getImplClass().replace("/", ".");
         return (Class<T>) Class.forName(className);
-    }
-
-    /**
-     * 从方法引用中获取其对应的 Method 对象。
-     * <p>
-     * 这里不再对 Method 本身做额外缓存，调用频率一般不会高到需要再加一层。
-     *
-     * @param getter 方法引用
-     * @return Method 对象
-     */
-    @SneakyThrows
-    public static <T, R> Method resolveGetterMethod(SFunc<T, R> getter) {
-        SerializedLambda serializedLambda = resolveSerializedLambda(getter);
-        String implMethodName = serializedLambda.getImplMethodName();
-        Class<?> getterClass = resolveGetterClass(getter);
-        Method method = ReflectionUtils.findMethod(getterClass, implMethodName);
-        if (method == null) {
-            throw new IllegalStateException("Could not find method " + implMethodName +
-                    " on class " + getterClass.getName());
-        }
-        return method;
     }
 
     /**
@@ -80,7 +61,7 @@ public abstract class LambdaHelper {
      * @param getter 方法引用，例如 User::getName
      * @return 属性名，例如 "name"
      */
-    public static <T, R> String resolveGetterPropertyName(SFunc<T, R> getter) {
+    public static <T, R> String resolvePropertyName(SFunc<T, R> getter) {
         String implMethodName = resolveSerializedLambda(getter).getImplMethodName();
         String name = implMethodName;
 
@@ -93,6 +74,24 @@ public abstract class LambdaHelper {
                     "'. Didn't start with 'is', 'get' or 'set'.");
         }
         return Introspector.decapitalize(name);
+    }
+
+    /**
+     * 清除缓存
+     */
+    public static void clearCache() {
+        LAMBDA_CACHE.clear();
+    }
+
+    /**
+     * 清除指定类的缓存
+     *
+     * @param clazz 类
+     */
+    public static void clearCache(Class<?> clazz) {
+        if (clazz != null) {
+            LAMBDA_CACHE.remove(clazz);
+        }
     }
 
   

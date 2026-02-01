@@ -44,7 +44,7 @@ public class EnumHelper<E extends Enum<E>, K> {
      * @return 枚举助手实例
      */
     public static <E extends Enum<E>, K> EnumHelper<E, K> of(SFunc<E, K> getter) {
-        Class<E> clazz = LambdaHelper.resolveGetterClass(getter);
+        Class<E> clazz = LambdaHelper.resolveClass(getter);
         return new EnumHelper<>(clazz, getter);
     }
 

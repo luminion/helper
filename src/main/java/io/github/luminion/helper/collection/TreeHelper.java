@@ -1,5 +1,6 @@
 package io.github.luminion.helper.collection;
 
+import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 
 import java.util.*;
@@ -13,7 +14,7 @@ import java.util.stream.Collectors;
  *
  * @author luminion
  */
-@RequiredArgsConstructor
+@RequiredArgsConstructor(access = AccessLevel.PRIVATE)
 public class TreeHelper<T, R> {
     /**
      * 最大深度
@@ -22,14 +23,7 @@ public class TreeHelper<T, R> {
     private final Function<T, R> idGetter;
     private final Function<T, R> parentIdGetter;
     private final BiConsumer<T, ? super List<T>> childrenSetter;
-
-    /**
-     * 默认构造函数（兼容旧代码，默认深度100）
-     */
-    public TreeHelper(Function<T, R> idGetter, Function<T, R> parentIdGetter,
-            BiConsumer<T, ? super List<T>> childrenSetter) {
-        this(100, idGetter, parentIdGetter, childrenSetter);
-    }
+    
 
     /**
      * 创建树助手

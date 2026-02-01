@@ -1,21 +1,25 @@
 package io.github.luminion.helper.geographical;
 
+import lombok.AccessLevel;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 
 import java.math.BigDecimal;
-import java.util.Arrays;
 import java.util.List;
 
 /**
  * 坐标点
  *
  * @author luminion
- * @link <a href="https://blog.csdn.net/zheng12tian/article/details/40617445">交点法判断点是否在多边形内</a>
- * @link <a href="https://blog.csdn.net/a704397849/article/details/121133616">坐标系转化</a>
+ * @link <a href=
+ *       "https://blog.csdn.net/zheng12tian/article/details/40617445">交点法判断点是否在多边形内</a>
+ * @link <a href=
+ *       "https://blog.csdn.net/a704397849/article/details/121133616">坐标系转化</a>
  */
 @Getter
 @EqualsAndHashCode
+@RequiredArgsConstructor(access = AccessLevel.PRIVATE)
 public class PointHelper {
     private static final double x_PI = 3.14159265358979324 * 3000.0 / 180.0;
     private static final double PI = 3.1415926535897932384626;
@@ -36,26 +40,11 @@ public class PointHelper {
     }
 
     public static PointHelper of(String longitude, String latitude) {
-        return new PointHelper(longitude, latitude);
+        return new PointHelper(Double.parseDouble(longitude), Double.parseDouble(latitude));
     }
 
     public static PointHelper of(BigDecimal longitude, BigDecimal latitude) {
-        return new PointHelper(longitude, latitude);
-    }
-
-    public PointHelper(double longitude, double latitude) {
-        this.longitude = longitude;
-        this.latitude = latitude;
-    }
-
-    public PointHelper(String longitude, String latitude) {
-        this.longitude = Double.parseDouble(longitude);
-        this.latitude = Double.parseDouble(latitude);
-    }
-
-    public PointHelper(BigDecimal longitude, BigDecimal latitude) {
-        this.longitude = longitude.doubleValue();
-        this.latitude = latitude.doubleValue();
+        return new PointHelper(longitude.doubleValue(), latitude.doubleValue());
     }
 
     /**
@@ -68,15 +57,16 @@ public class PointHelper {
      * @return double
      */
     public static double getDistanceMeters(double longitude1, double latitude1, double longitude2, double latitude2) {
-        return new PointHelper(longitude1, latitude1).getDistanceMeters(new PointHelper(longitude2, latitude2));
+        return of(longitude1, latitude1).getDistanceMeters(of(longitude2, latitude2));
     }
 
     public static double getDistanceMeters(String longitude1, String latitude1, String longitude2, String latitude2) {
-        return new PointHelper(longitude1, latitude1).getDistanceMeters(new PointHelper(longitude2, latitude2));
+        return of(longitude1, latitude1).getDistanceMeters(of(longitude2, latitude2));
     }
 
-    public static double getDistanceMeters(BigDecimal longitude1, BigDecimal latitude1, BigDecimal longitude2, BigDecimal latitude2) {
-        return new PointHelper(longitude1, latitude1).getDistanceMeters(new PointHelper(longitude2, latitude2));
+    public static double getDistanceMeters(BigDecimal longitude1, BigDecimal latitude1, BigDecimal longitude2,
+                                           BigDecimal latitude2) {
+        return of(longitude1, latitude1).getDistanceMeters(of(longitude2, latitude2));
     }
 
     public static double getDistanceMeters(PointHelper point1, PointHelper point2) {
@@ -92,16 +82,19 @@ public class PointHelper {
      * @param latitude2  纬度2
      * @return double
      */
-    public static double getDistanceKilometer(double longitude1, double latitude1, double longitude2, double latitude2) {
-        return new PointHelper(longitude1, latitude1).getDistanceKilometers(new PointHelper(longitude2, latitude2));
+    public static double getDistanceKilometer(double longitude1, double latitude1, double longitude2,
+                                              double latitude2) {
+        return of(longitude1, latitude1).getDistanceKilometers(of(longitude2, latitude2));
     }
 
-    public static double getDistanceKilometer(String longitude1, String latitude1, String longitude2, String latitude2) {
-        return new PointHelper(longitude1, latitude1).getDistanceKilometers(new PointHelper(longitude2, latitude2));
+    public static double getDistanceKilometer(String longitude1, String latitude1, String longitude2,
+                                              String latitude2) {
+        return of(longitude1, latitude1).getDistanceKilometers(of(longitude2, latitude2));
     }
 
-    public static double getDistanceKilometer(BigDecimal longitude1, BigDecimal latitude1, BigDecimal longitude2, BigDecimal latitude2) {
-        return new PointHelper(longitude1, latitude1).getDistanceKilometers(new PointHelper(longitude2, latitude2));
+    public static double getDistanceKilometer(BigDecimal longitude1, BigDecimal latitude1, BigDecimal longitude2,
+                                              BigDecimal latitude2) {
+        return of(longitude1, latitude1).getDistanceKilometers(of(longitude2, latitude2));
     }
 
     public static double getDistanceKilometer(PointHelper point1, PointHelper point2) {
@@ -215,7 +208,6 @@ public class PointHelper {
         return new PointHelper(longitude, latitude).transformWGS84ToBD09();
     }
 
-
     /**
      * 根据这组坐标，画一个矩形，然后得到这个矩形西南角的顶点坐标
      *
@@ -272,7 +264,8 @@ public class PointHelper {
     }
 
     private static double transformLat(double lng, double lat) {
-        double ret = -100.0 + 2.0 * lng + 3.0 * lat + 0.2 * lat * lat + 0.1 * lng * lat + 0.2 * Math.sqrt(Math.abs(lng));
+        double ret = -100.0 + 2.0 * lng + 3.0 * lat + 0.2 * lat * lat + 0.1 * lng * lat
+                + 0.2 * Math.sqrt(Math.abs(lng));
         ret += (20.0 * Math.sin(6.0 * lng * PI) + 20.0 * Math.sin(2.0 * lng * PI)) * 2.0 / 3.0;
         ret += (20.0 * Math.sin(lat * PI) + 40.0 * Math.sin(lat / 3.0 * PI)) * 2.0 / 3.0;
         ret += (160.0 * Math.sin(lat / 12.0 * PI) + 320 * Math.sin(lat * PI / 30.0)) * 2.0 / 3.0;
@@ -287,6 +280,10 @@ public class PointHelper {
         return ret;
     }
 
+    /**
+     * WGS84 地球半径 (米)
+     */
+    private static final double EARTH_RADIUS_WGS84 = 6378137.0;
 
     /**
      * 获取距离 (米)
@@ -295,7 +292,7 @@ public class PointHelper {
      * @return double
      */
     public double getDistanceMeters(PointHelper point) {
-        //用户纬度
+        // 用户纬度
         double userLongitude = Math.toRadians(point.getLongitude());
         double userLatitude = Math.toRadians(point.getLatitude());
 
@@ -306,9 +303,10 @@ public class PointHelper {
         // 经度之差
         double b = userLongitude - longitude;
         // 计算两点距离的公式
-        double s = 2 * Math.asin(Math.sqrt(Math.pow(Math.sin(a / 2), 2) + Math.cos(userLatitude) * Math.cos(latitude) * Math.pow(Math.sin(b / 2), 2)));
-        // 弧长乘赤道半径, 返回单位: 米, 地球半径,单位 米
-        s = s * 6378137;
+        double s = 2 * Math.asin(Math.sqrt(Math.pow(Math.sin(a / 2), 2)
+                + Math.cos(userLatitude) * Math.cos(latitude) * Math.pow(Math.sin(b / 2), 2)));
+        // 弧长乘赤道半径, 返回单位: 米
+        s = s * EARTH_RADIUS_WGS84;
         return s;
     }
 
@@ -333,7 +331,6 @@ public class PointHelper {
         return getDistanceMeters(circle) <= radius;
     }
 
-
     /**
      * 是否在指定区域内(基本思路是用交点法)
      *
@@ -351,145 +348,97 @@ public class PointHelper {
      * @return boolean
      */
     public boolean isInPolygon(PointHelper[] boundaryPoints) {
-        // 防止第一个点与最后一个点相同
-        if (boundaryPoints != null && boundaryPoints.length > 0 && boundaryPoints[boundaryPoints.length - 1].equals(boundaryPoints[0])) {
-            boundaryPoints = Arrays.copyOf(boundaryPoints, boundaryPoints.length - 1);
+        boolean result = false;
+        // 防止数据异常
+        if (boundaryPoints == null || boundaryPoints.length < 3) {
+            return false;
         }
-        int pointCount = boundaryPoints.length;
 
-        // 首先判断点是否在多边形的外包矩形内，如果在，则进一步判断，否则返回false
+        // 首先判断外包矩形，快速失败
         if (!isInRectangleBoundary(boundaryPoints)) {
             return false;
         }
 
-        // 如果点与多边形的其中一个顶点重合，那么直接返回true
-        for (int i = 0; i < pointCount; i++) {
-            if (this.equals(boundaryPoints[i])) {
+        int j = boundaryPoints.length - 1;
+        for (int i = 0; i < boundaryPoints.length; i++) {
+            PointHelper p1 = boundaryPoints[i];
+            PointHelper p2 = boundaryPoints[j];
+
+            // 1. 判断是否在线段上 (包含端点)
+            if (this.isOnSegment(p1, p2)) {
                 return true;
             }
+
+            // 2. 射线法逻辑 (X轴向右射线)
+            // 判断边的两端点是否在射线的两侧 (p1.lat < lat <= p2.lat 或者 p2.lat < lat <= p1.lat)
+            // 仅仅当射线的一条边穿越射线时才做计算 (左闭右开 或者 左开右闭，防止顶点重复计算)
+            if ((p1.getLatitude() < this.latitude && p2.getLatitude() >= this.latitude)
+                    || (p2.getLatitude() < this.latitude && p1.getLatitude() >= this.latitude)) {
+
+                // 计算交点的 X 坐标
+                // x = x1 + (y - y1) * (x2 - x1) / (y2 - y1)
+                // 为了避免除法精度问题，使用乘法形式判断:
+                // 如果 point.x < intersection.x，则射线穿过该边。
+                // 等价于: point.x - x1 < (y - y1) * (x2 - x1) / (y2 - y1)
+                // 再变形(注意 y2-y1 正负号): (point.x - x1) * (y2 - y1) < (y - y1) * (x2 - x1)
+                // (这也是叉积的一种形式)
+
+                // 叉积判断: Cross(Vector(P1, P), Vector(P1, P2))
+                // 如果结果与其纬度差方向不一致，说明点在交点左侧
+                // 这里采用更直观的交点公式，但在除法前转为乘法比较并注意符号
+                // 只有当点在交点左侧时，result 取反
+
+                // 简单点：计算交点 intersectX
+                double intersectX = p1.getLongitude() + (this.latitude - p1.getLatitude())
+                        * (p2.getLongitude() - p1.getLongitude()) / (p2.getLatitude() - p1.getLatitude());
+
+                if (this.longitude < intersectX) {
+                    result = !result;
+                }
+            }
+            j = i;
         }
 
-        // 基本思想是利用X轴射线法，计算射线与多边形各边的交点，如果是偶数，则点在多边形外，否则在多边形内。还会考虑一些特殊情况，如点在多边形顶点上， 点在多边形边上等特殊情况。
+        return result;
+    }
 
-        // X轴射线与多边形的交点数
-        int intersectPointCount = 0;
-        // X轴射线与多边形的交点权值
-        float intersectPointWeights = 0;
-        // 浮点类型计算时候与0比较时候的容差0.0000000002
+    /**
+     * 判断当前点是否在指定线段上 (允许误差)
+     */
+    private boolean isOnSegment(PointHelper p1, PointHelper p2) {
         double precision = 2e-10;
-        // 边P1P2的两个端点
-        PointHelper point1 = boundaryPoints[0], point2;
-        // 循环判断所有的边
-        for (int i = 1; i <= pointCount; i++) {
-            point2 = boundaryPoints[i % pointCount];
-
-            // 如果点的y坐标在边P1P2的y坐标开区间范围之外，那么不相交。
-            if (this.getLatitude() < Math.min(point1.getLatitude(), point2.getLatitude())
-                    || this.getLatitude() > Math.max(point1.getLatitude(), point2.getLatitude())) {
-                point1 = point2;
-                continue;
-            }
-
-            // 此处判断射线与边相交
-            // 如果点的y坐标在边P1P2的y坐标开区间内
-            if (this.getLatitude() > Math.min(point1.getLatitude(), point2.getLatitude())
-                    && this.getLatitude() < Math.max(point1.getLatitude(), point2.getLatitude())) {
-                // 若边P1P2是垂直的
-                if (point1.getLongitude() == point2.getLongitude()) {
-                    // 若点在垂直的边P1P2上，则点在多边形内
-                    if (this.getLongitude() == point1.getLongitude()) {
-                        return true;
-                    }
-                    // 若点在在垂直的边P1P2左边，则点与该边必然有交点
-                    else if (this.getLongitude() < point1.getLongitude()) {
-                        ++intersectPointCount;
-                    }
-                }
-                // 若边P1P2是斜线
-                else {
-                    // 点point的x坐标在点P1和P2的左侧
-                    if (this.getLongitude() <= Math.min(point1.getLongitude(), point2.getLongitude())) {
-                        ++intersectPointCount;
-                    }
-                    // 点point的x坐标在点P1和P2的x坐标中间
-                    else if (this.getLongitude() > Math.min(point1.getLongitude(), point2.getLongitude())
-                            && this.getLongitude() < Math.max(point1.getLongitude(), point2.getLongitude())) {
-                        double slopeDiff = getSlopeDiff(point1, point2);
-                        if (slopeDiff > 0) {
-                            // 由于double精度在计算时会有损失，故匹配一定的容差。经试验，坐标经度可以达到0.0001
-                            if (slopeDiff < precision) {
-                                // 点在斜线P1P2上
-                                return true;
-                            } else {
-                                // 点与斜线P1P2有交点
-                                intersectPointCount++;
-                            }
-                        }
-                    }
-                }
-            }
-            // 点的y坐标不在边P1P2的y坐标开区间内
-            else {
-                // 边P1P2水平
-                if (point1.getLatitude() == point2.getLatitude()) {
-                    if (isInRectangleEdge(point1, point2)) {
-                        return true;
-                    }
-                }
-                // 判断点通过多边形顶点
-                if (((this.getLatitude() == point1.getLatitude() && this.getLongitude() < point1.getLongitude())) || (this.getLatitude() == point2.getLatitude() && this.getLongitude() < point2.getLongitude())) {
-                    if (point2.getLatitude() < point1.getLatitude()) {
-                        intersectPointWeights += -0.5;
-                    } else if (point2.getLatitude() > point1.getLatitude()) {
-                        intersectPointWeights += 0.5;
-                    }
-                }
-            }
-            point1 = point2;
-        }
-        // 偶数在多边形外
-        if ((intersectPointCount + Math.abs(intersectPointWeights)) % 2 == 0) {
+        // 1. 快速排除外包矩形
+        if (this.longitude < Math.min(p1.getLongitude(), p2.getLongitude()) - precision ||
+                this.longitude > Math.max(p1.getLongitude(), p2.getLongitude()) + precision ||
+                this.latitude < Math.min(p1.getLatitude(), p2.getLatitude()) - precision ||
+                this.latitude > Math.max(p1.getLatitude(), p2.getLatitude()) + precision) {
             return false;
         }
-        // 奇数在多边形内
-        else {
-            return true;
-        }
+
+        // 2. 叉积判断是否共线: (x - x1)*(y2 - y1) - (y - y1)*(x2 - x1)
+        double crossProduct = (this.longitude - p1.getLongitude()) * (p2.getLatitude() - p1.getLatitude())
+                - (this.latitude - p1.getLatitude()) * (p2.getLongitude() - p1.getLongitude());
+
+        return Math.abs(crossProduct) < precision;
     }
 
-
     /**
-     * 获取与指定直线的斜率差
+     * 判断是否在多边形边P上 (公共方法需严谨)
      * <p>
-     * 当斜率差值接近0（小于某个精度值）时，说明当前点在由 point1 和 point2 构成的线段上
-     *
-     * @param point1 point1 线段顶点1
-     * @param point2 point2 线段顶点2
-     * @return double
-     */
-    private double getSlopeDiff(PointHelper point1, PointHelper point2) {
-        double slopeDiff = 0.0d;
-        if (point1.getLatitude() > point2.getLatitude()) {
-            slopeDiff = (this.getLatitude() - point2.getLatitude()) / (this.getLongitude() - point2.getLongitude()) - (point1.getLatitude() - point2.getLatitude()) / (point1.getLongitude() - point2.getLongitude());
-        } else {
-            slopeDiff = (this.getLatitude() - point1.getLatitude()) / (this.getLongitude() - point1.getLongitude()) - (point2.getLatitude() - point1.getLatitude()) / (point2.getLongitude() - point1.getLongitude());
-        }
-        return slopeDiff;
-    }
-
-    /**
-     * 判断是否在多边形边P上
+     * 实际上是判断是否在以 p1, p2 为对角线的矩形范围内。
+     * 原逻辑只判断了 Longitude，这是不安全的。
+     * 现修正为完整的矩形范围判断。如果需要严格判断是否在线段上，建议使用新的 isOnSegment 方法。
+     * 保持方法名兼容性，但修正逻辑。
      *
      * @param point1 point1 线段顶点1
      * @param point2 point2 线段顶点2
      * @return boolean
      */
     public boolean isInRectangleEdge(PointHelper point1, PointHelper point2) {
-        if (this.getLongitude() <= Math.max(point1.getLongitude(), point2.getLongitude()) && this.getLongitude() >= Math.min(point1.getLongitude(), point2.getLongitude())) {
-            // 若点在水平的边P1P2上，则点在多边形内
-            return true;
-        }
-        return false;
+        return this.getLongitude() >= Math.min(point1.getLongitude(), point2.getLongitude())
+                && this.getLongitude() <= Math.max(point1.getLongitude(), point2.getLongitude())
+                && this.getLatitude() >= Math.min(point1.getLatitude(), point2.getLatitude())
+                && this.getLatitude() <= Math.max(point1.getLatitude(), point2.getLatitude());
     }
 
     /**
@@ -509,7 +458,6 @@ public class PointHelper {
         boolean b4 = this.getLatitude() <= northEastPoint.getLatitude();
         return b && b3 && b2 && b4;
     }
-
 
     /**
      * 百度坐标（BD09）转 GCJ02
@@ -532,7 +480,8 @@ public class PointHelper {
      * @return 百度坐标：[经度，纬度]
      */
     public PointHelper transformGCJ02ToBD09() {
-        double z = Math.sqrt(this.longitude * this.longitude + this.latitude * this.latitude) + 0.00002 * Math.sin(this.latitude * x_PI);
+        double z = Math.sqrt(this.longitude * this.longitude + this.latitude * this.latitude)
+                + 0.00002 * Math.sin(this.latitude * x_PI);
         double theta = Math.atan2(this.latitude, this.longitude) + 0.000003 * Math.cos(this.longitude * x_PI);
         double bd_lng = z * Math.cos(theta) + 0.0065;
         double bd_lat = z * Math.sin(theta) + 0.006;
@@ -604,6 +553,5 @@ public class PointHelper {
         PointHelper gcj02Point = transformWGS84ToGCJ02();
         return gcj02Point.transformGCJ02ToBD09();
     }
-
 
 }

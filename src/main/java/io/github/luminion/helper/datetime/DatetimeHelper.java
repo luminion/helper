@@ -1,5 +1,6 @@
 package io.github.luminion.helper.datetime;
 
+import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 
 import java.time.*;
@@ -11,7 +12,7 @@ import java.util.Date;
  *
  * @author luminion
  */
-@RequiredArgsConstructor
+@RequiredArgsConstructor(access = AccessLevel.PRIVATE)
 public class DatetimeHelper {
     public static final String PATTERN = "yyyy-MM-dd HH:mm:ss";
     public static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern(PATTERN);

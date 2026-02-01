@@ -1,5 +1,6 @@
 package io.github.luminion.helper.io;
 
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.*;
@@ -26,15 +27,7 @@ public class FfmpegHelper {
     private final String tempMediaPath;
     private final File tempMediaDir;
 
-    /**
-     * ffmpeg助手
-     *
-     * @param ffplay        ffplay可执行文件路径
-     * @param ffmpeg        ffmpeg可执行文件路径
-     * @param ffprobe       ffprobe可执行文件路径
-     * @param tempMediaPath 临时文件保存路径
-     */
-    public FfmpegHelper(String ffplay, String ffmpeg, String ffprobe, String tempMediaPath) {
+    private FfmpegHelper(String ffplay, String ffmpeg, String ffprobe, String tempMediaPath) {
         this.ffplay = ffplay;
         this.ffmpeg = ffmpeg;
         this.ffprobe = ffprobe;
@@ -43,6 +36,18 @@ public class FfmpegHelper {
         if (!tempMediaDir.exists()) {
             tempMediaDir.mkdirs();
         }
+    }
+
+    /**
+     * ffmpeg助手
+     *
+     * @param ffplay        ffplay可执行文件路径
+     * @param ffmpeg        ffmpeg可执行文件路径
+     * @param ffprobe       ffprobe可执行文件路径
+     * @param tempMediaPath 临时文件保存路径
+     */
+    public static FfmpegHelper of(String ffplay, String ffmpeg, String ffprobe, String tempMediaPath) {
+        return new FfmpegHelper(ffplay, ffmpeg, ffprobe, tempMediaPath);
     }
 
     /**

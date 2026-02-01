@@ -22,12 +22,11 @@ public class EnumHelper<E extends Enum<E>, K> {
     private EnumHelper(Class<E> clazz, Function<E, K> getter) {
         EnumSet<E> enumSet = EnumSet.allOf(clazz);
         Map<K, E> map = new HashMap<>(enumSet.size());
-
         for (E e : enumSet) {
             K key = getter.apply(e);
             if (key != null) {
                 if (map.containsKey(key)) {
-                     throw new IllegalArgumentException("Duplicate key found in enum: " + key);
+                    throw new IllegalArgumentException("Duplicate key:[" + key + "] found in enum: " + clazz.getName());
                 }
                 map.put(key, e);
             }
@@ -84,7 +83,7 @@ public class EnumHelper<E extends Enum<E>, K> {
 
     /**
      * 获取枚举键值对映射的Map
-     * 
+     *
      * @param valueGetter 获取值的 getter
      * @param <V>         值类型
      * @return 映射的Map

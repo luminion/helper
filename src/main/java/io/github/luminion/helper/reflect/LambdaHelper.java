@@ -1,5 +1,6 @@
 package io.github.luminion.helper.reflect;
 
+import io.github.luminion.helper.core.SFunc;
 import lombok.SneakyThrows;
 
 import java.beans.Introspector;
@@ -11,7 +12,7 @@ import java.util.concurrent.atomic.AtomicReference;
  * @author luminion
  * @since 1.0.0
  */
-public class LambdaHelper {
+public abstract class LambdaHelper {
 
     /**
      * 缓存 Lambda 相关元数据

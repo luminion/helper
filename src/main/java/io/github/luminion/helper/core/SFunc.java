@@ -1,4 +1,4 @@
-package io.github.luminion.helper.reflect;
+package io.github.luminion.helper.core;
 
 import java.io.Serializable;
 import java.util.function.Function;

@@ -1,7 +1,7 @@
 package io.github.luminion.helper.collection;
 
 import io.github.luminion.helper.reflect.LambdaHelper;
-import io.github.luminion.helper.reflect.SFunc;
+import io.github.luminion.helper.core.SFunc;
 
 import java.util.Collections;
 import java.util.EnumSet;

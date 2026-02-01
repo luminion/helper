@@ -155,21 +155,34 @@ public class TreeHelper<T, R> {
                 .collect(Collectors.groupingBy(parentIdGetter));
 
         List<T> result = new ArrayList<>();
-        collectChildrenRecursively(parentMap, id, result);
+        Set<R> visited = new HashSet<>();
+        // 初始节点不加入visited，因为它不在结果集中，但如果作为子节点再次出现则需要校验
+        // 不过通常我们关注的是遍历过程中是否遇到已处理过的子节点
+
+        collectChildrenRecursively(parentMap, id, result, visited);
         return result;
     }
 
     /**
-     * 递归收集子节点
+     * 递归收集子节点（带循环检测）
      */
-    private void collectChildrenRecursively(Map<R, List<T>> parentMap, R currentId, List<T> result) {
+    private void collectChildrenRecursively(Map<R, List<T>> parentMap, R currentId, List<T> result, Set<R> visited) {
         List<T> children = parentMap.get(currentId);
         if (children == null || children.isEmpty()) {
             return;
         }
-        result.addAll(children);
+
         for (T child : children) {
-            collectChildrenRecursively(parentMap, idGetter.apply(child), result);
+            R childId = idGetter.apply(child);
+            // 如果已经访问过该子节点ID，说明存在循环引用，跳过
+            if (!visited.add(childId)) {
+                continue;
+            }
+            result.add(child);
+            if (visited.size() > maxDepth) {
+                continue;
+            }
+            collectChildrenRecursively(parentMap, childId, result, visited);
         }
     }
 

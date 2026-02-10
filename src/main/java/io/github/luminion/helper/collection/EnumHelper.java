@@ -49,6 +49,21 @@ public class EnumHelper<E extends Enum<E>, K> {
     }
 
     /**
+     * 解决
+     */
+    public static <E extends Enum<E>, R> E resolve(SFunc<E, R> getter, R value) {
+        Class<E> clazz = LambdaHelper.resolveClass(getter);
+        EnumSet<E> enumSet = EnumSet.allOf(clazz);
+        for (E e : enumSet) {
+            R apply = getter.apply(e);
+            if (apply != null && apply.equals(value)) {
+                return e;
+            }
+        }
+        return null;
+    }
+
+    /**
      * 根据 key 获取枚举实例 (O(1) 复杂度)
      *
      * @param key key

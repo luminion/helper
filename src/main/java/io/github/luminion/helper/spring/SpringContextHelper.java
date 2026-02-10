@@ -13,6 +13,7 @@ import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
 
+import java.time.LocalDateTime;
 import java.util.Map;
 
 /**
@@ -24,6 +25,11 @@ import java.util.Map;
 public class SpringContextHelper implements BeanFactoryPostProcessor, ApplicationContextAware {
     private static ConfigurableListableBeanFactory beanFactory;
     private static ApplicationContext applicationContext;
+
+    public static void main(String[] args) {
+        LocalDateTime   localDateTime = LocalDateTime.now().plusSeconds(31102);
+        System.out.println(localDateTime);
+    }
 
     public void postProcessBeanFactory(ConfigurableListableBeanFactory beanFactory) throws BeansException {
         SpringContextHelper.beanFactory = beanFactory;

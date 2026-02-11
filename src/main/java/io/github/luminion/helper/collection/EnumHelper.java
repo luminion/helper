@@ -136,7 +136,7 @@ public class EnumHelper<E extends Enum<E>, K> {
      * @return 值，未找到返回 null
      */
     public <V> V resolveValue(K key, Function<E, V> valueGetter) {
-        E e = resolve(key);
+        E e = resolveEnum(key);
         return e == null ? null : valueGetter.apply(e);
     }
 
@@ -147,7 +147,7 @@ public class EnumHelper<E extends Enum<E>, K> {
      * @param <V>         值类型
      * @return 映射的Map
      */
-    public <V> Map<K, V> resolveValue(Function<E, V> valueGetter) {
+    public <V> Map<K, V> resolveMap(Function<E, V> valueGetter) {
         return keyMap.entrySet().stream()
                 .collect(Collectors.toMap(Map.Entry::getKey, e -> valueGetter.apply(e.getValue())));
     }

@@ -23,8 +23,14 @@ import java.util.List;
 public class PointHelper {
     private static final double x_PI = 3.14159265358979324 * 3000.0 / 180.0;
     private static final double PI = 3.1415926535897932384626;
-    private static final double a = 6378245.0;
-    private static final double ee = 0.00669342162296594323;
+    /**
+     * 克拉索夫斯基椭球体长半轴
+     */
+    private static final double KRASOVSKY_A = 6378245.0;
+    /**
+     * 克拉索夫斯基椭球体偏心率平方i
+     */
+    private static final double KRASOVSKY_EE = 0.00669342162296594323;
 
     /**
      * 经度
@@ -254,6 +260,7 @@ public class PointHelper {
 
     /**
      * 判断坐标是否不在国内
+     * 这是一个矩形框。中国版图并非矩形。这会导致如果在国外但在该矩形框延伸区域内（如部分邻国区域）
      *
      * @param lng 经度
      * @param lat 纬度
@@ -406,7 +413,8 @@ public class PointHelper {
      * 判断当前点是否在指定线段上 (允许误差)
      */
     private boolean isOnSegment(PointHelper p1, PointHelper p2) {
-        double precision = 2e-10;
+        //double precision = 2e-10; // 毫米精度
+        double precision = 1e-7;// 厘米精度
         // 1. 快速排除外包矩形
         if (this.longitude < Math.min(p1.getLongitude(), p2.getLongitude()) - precision ||
                 this.longitude > Math.max(p1.getLongitude(), p2.getLongitude()) + precision ||
@@ -434,7 +442,7 @@ public class PointHelper {
      * @param point2 point2 线段顶点2
      * @return boolean
      */
-    public boolean isInRectangleEdge(PointHelper point1, PointHelper point2) {
+    public boolean isInRectangleArea(PointHelper point1, PointHelper point2) {
         return this.getLongitude() >= Math.min(point1.getLongitude(), point2.getLongitude())
                 && this.getLongitude() <= Math.max(point1.getLongitude(), point2.getLongitude())
                 && this.getLatitude() >= Math.min(point1.getLatitude(), point2.getLatitude())
@@ -501,10 +509,10 @@ public class PointHelper {
             double dLng = transformLng(this.longitude - 105.0, this.latitude - 35.0);
             double radLat = this.latitude / 180.0 * PI;
             double magic = Math.sin(radLat);
-            magic = 1 - ee * magic * magic;
+            magic = 1 - KRASOVSKY_EE * magic * magic;
             double sqrtMagic = Math.sqrt(magic);
-            dLat = (dLat * 180.0) / ((a * (1 - ee)) / (magic * sqrtMagic) * PI);
-            dLng = (dLng * 180.0) / (a / sqrtMagic * Math.cos(radLat) * PI);
+            dLat = (dLat * 180.0) / ((KRASOVSKY_A * (1 - KRASOVSKY_EE)) / (magic * sqrtMagic) * PI);
+            dLng = (dLng * 180.0) / (KRASOVSKY_A / sqrtMagic * Math.cos(radLat) * PI);
             double mgLat = this.latitude + dLat;
             double mgLng = this.longitude + dLng;
             return new PointHelper(this.longitude * 2 - mgLng, this.latitude * 2 - mgLat);
@@ -524,10 +532,10 @@ public class PointHelper {
             double dLng = transformLng(this.longitude - 105.0, this.latitude - 35.0);
             double redLat = this.latitude / 180.0 * PI;
             double magic = Math.sin(redLat);
-            magic = 1 - ee * magic * magic;
+            magic = 1 - KRASOVSKY_EE * magic * magic;
             double sqrtMagic = Math.sqrt(magic);
-            dLat = (dLat * 180.0) / ((a * (1 - ee)) / (magic * sqrtMagic) * PI);
-            dLng = (dLng * 180.0) / (a / sqrtMagic * Math.cos(redLat) * PI);
+            dLat = (dLat * 180.0) / ((KRASOVSKY_A * (1 - KRASOVSKY_EE)) / (magic * sqrtMagic) * PI);
+            dLng = (dLng * 180.0) / (KRASOVSKY_A / sqrtMagic * Math.cos(redLat) * PI);
             double mgLat = this.latitude + dLat;
             double mgLng = this.longitude + dLng;
             return new PointHelper(mgLng, mgLat);

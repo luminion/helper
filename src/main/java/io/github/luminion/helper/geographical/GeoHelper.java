@@ -16,13 +16,13 @@ import java.util.List;
  * - 坐标系相互转换：toWGS84 / toGCJ02 / toBD09 / to(CoordinateSystem)
  *
  * 注意：
- * - PointHelper 实例内部的经纬度值始终对应其 {@link CoordinateSystem} 字段标记的坐标系
+ * - GeoHelper 实例内部的经纬度值始终对应其 {@link CoordinateSystem} 字段标记的坐标系
  *
  * @author luminion
  */
 @Getter
 @EqualsAndHashCode
-public class PointHelper {
+public class GeoHelper {
 
     /**
      * 坐标系类型
@@ -111,7 +111,7 @@ public class PointHelper {
      * @param latitude         纬度
      * @param coordinateSystem 坐标系
      */
-    private PointHelper(double longitude, double latitude, CoordinateSystem coordinateSystem) {
+    private GeoHelper(double longitude, double latitude, CoordinateSystem coordinateSystem) {
         if (longitude < -180.0 || longitude > 180.0) {
             throw new IllegalArgumentException("经度范围必须在 [-180, 180] 之间，当前值: " + longitude);
         }
@@ -134,8 +134,8 @@ public class PointHelper {
      * @param coordinateSystem 坐标系
      * @return 坐标点工具类
      */
-    public static PointHelper of(double longitude, double latitude, CoordinateSystem coordinateSystem) {
-        return new PointHelper(longitude, latitude, coordinateSystem);
+    public static GeoHelper of(double longitude, double latitude, CoordinateSystem coordinateSystem) {
+        return new GeoHelper(longitude, latitude, coordinateSystem);
     }
 
     /**
@@ -145,8 +145,8 @@ public class PointHelper {
      * @param latitude  纬度
      * @return 坐标点工具类
      */
-    public static PointHelper ofWGS84(double longitude, double latitude) {
-        return new PointHelper(longitude, latitude, CoordinateSystem.WGS84);
+    public static GeoHelper ofWGS84(double longitude, double latitude) {
+        return new GeoHelper(longitude, latitude, CoordinateSystem.WGS84);
     }
 
     /**
@@ -156,7 +156,7 @@ public class PointHelper {
      * @param latitude  纬度
      * @return 坐标点工具类
      */
-    public static PointHelper ofWGS84(String longitude, String latitude) {
+    public static GeoHelper ofWGS84(String longitude, String latitude) {
         if (longitude == null || latitude == null || longitude.trim().isEmpty() || latitude.trim().isEmpty()) {
             throw new IllegalArgumentException("经纬度不能为空");
         }
@@ -170,7 +170,7 @@ public class PointHelper {
      * @param latitude  纬度
      * @return 坐标点工具类
      */
-    public static PointHelper ofWGS84(BigDecimal longitude, BigDecimal latitude) {
+    public static GeoHelper ofWGS84(BigDecimal longitude, BigDecimal latitude) {
         if (longitude == null || latitude == null) {
             throw new IllegalArgumentException("经纬度不能为空");
         }
@@ -184,8 +184,8 @@ public class PointHelper {
      * @param latitude  纬度
      * @return 坐标点工具类
      */
-    public static PointHelper ofGCJ02(double longitude, double latitude) {
-        return new PointHelper(longitude, latitude, CoordinateSystem.GCJ02);
+    public static GeoHelper ofGCJ02(double longitude, double latitude) {
+        return new GeoHelper(longitude, latitude, CoordinateSystem.GCJ02);
     }
 
     /**
@@ -195,7 +195,7 @@ public class PointHelper {
      * @param latitude  纬度
      * @return 坐标点工具类
      */
-    public static PointHelper ofGCJ02(String longitude, String latitude) {
+    public static GeoHelper ofGCJ02(String longitude, String latitude) {
         if (longitude == null || latitude == null || longitude.trim().isEmpty() || latitude.trim().isEmpty()) {
             throw new IllegalArgumentException("经纬度不能为空");
         }
@@ -209,7 +209,7 @@ public class PointHelper {
      * @param latitude  纬度
      * @return 坐标点工具类
      */
-    public static PointHelper ofGCJ02(BigDecimal longitude, BigDecimal latitude) {
+    public static GeoHelper ofGCJ02(BigDecimal longitude, BigDecimal latitude) {
         if (longitude == null || latitude == null) {
             throw new IllegalArgumentException("经纬度不能为空");
         }
@@ -223,8 +223,8 @@ public class PointHelper {
      * @param latitude  纬度
      * @return 坐标点工具类
      */
-    public static PointHelper ofBD09(double longitude, double latitude) {
-        return new PointHelper(longitude, latitude, CoordinateSystem.BD09);
+    public static GeoHelper ofBD09(double longitude, double latitude) {
+        return new GeoHelper(longitude, latitude, CoordinateSystem.BD09);
     }
 
     /**
@@ -234,7 +234,7 @@ public class PointHelper {
      * @param latitude  纬度
      * @return 坐标点工具类
      */
-    public static PointHelper ofBD09(String longitude, String latitude) {
+    public static GeoHelper ofBD09(String longitude, String latitude) {
         if (longitude == null || latitude == null || longitude.trim().isEmpty() || latitude.trim().isEmpty()) {
             throw new IllegalArgumentException("经纬度不能为空");
         }
@@ -248,7 +248,7 @@ public class PointHelper {
      * @param latitude  纬度
      * @return 坐标点工具类
      */
-    public static PointHelper ofBD09(BigDecimal longitude, BigDecimal latitude) {
+    public static GeoHelper ofBD09(BigDecimal longitude, BigDecimal latitude) {
         if (longitude == null || latitude == null) {
             throw new IllegalArgumentException("经纬度不能为空");
         }
@@ -349,8 +349,8 @@ public class PointHelper {
      */
     public static double getDistanceMetersGcj02(double longitude1, double latitude1, double longitude2,
                                                 double latitude2) {
-        PointHelper p1 = gcj02ToWgs84(longitude1, latitude1);
-        PointHelper p2 = gcj02ToWgs84(longitude2, latitude2);
+        GeoHelper p1 = gcj02ToWgs84(longitude1, latitude1);
+        GeoHelper p2 = gcj02ToWgs84(longitude2, latitude2);
         return calculateHaversineDistance(p1.longitude, p1.latitude, p2.longitude, p2.latitude);
     }
 
@@ -382,8 +382,8 @@ public class PointHelper {
     public static double getDistanceMetersBd09(double longitude1, double latitude1, double longitude2,
                                                double latitude2) {
         // BD09 -> GCJ02 -> WGS84
-        PointHelper p1 = bd09ToGcj02(longitude1, latitude1).toWGS84();
-        PointHelper p2 = bd09ToGcj02(longitude2, latitude2).toWGS84();
+        GeoHelper p1 = bd09ToGcj02(longitude1, latitude1).toWGS84();
+        GeoHelper p2 = bd09ToGcj02(longitude2, latitude2).toWGS84();
         return calculateHaversineDistance(p1.longitude, p1.latitude, p2.longitude, p2.latitude);
     }
 
@@ -410,7 +410,7 @@ public class PointHelper {
      * @param point2 坐标点2
      * @return 距离 (米)
      */
-    public static double getDistanceMeters(PointHelper point1, PointHelper point2) {
+    public static double getDistanceMeters(GeoHelper point1, GeoHelper point2) {
         return point1.getDistanceMeters(point2);
     }
 
@@ -420,16 +420,16 @@ public class PointHelper {
      * @param vertexes 顶点列表
      * @return 坐标点工具类
      */
-    public static PointHelper getSouthWestPoint(PointHelper[] vertexes) {
+    public static GeoHelper getSouthWestPoint(GeoHelper[] vertexes) {
         if (vertexes == null || vertexes.length == 0) {
             throw new IllegalArgumentException("vertexes 不能为空");
         }
         double minLng = vertexes[0].getLongitude();
         double minLat = vertexes[0].getLatitude();
         CoordinateSystem cs = vertexes[0].getCoordinateSystem();
-        for (PointHelper pointHelper : vertexes) {
-            double x = pointHelper.getLongitude();
-            double y = pointHelper.getLatitude();
+        for (GeoHelper geoHelper : vertexes) {
+            double x = geoHelper.getLongitude();
+            double y = geoHelper.getLatitude();
             if (x < minLng) {
                 minLng = x;
             }
@@ -437,7 +437,7 @@ public class PointHelper {
                 minLat = y;
             }
         }
-        return new PointHelper(minLng, minLat, cs);
+        return new GeoHelper(minLng, minLat, cs);
     }
 
     /**
@@ -446,16 +446,16 @@ public class PointHelper {
      * @param vertexes 顶点列表
      * @return 坐标点工具类
      */
-    public static PointHelper getNorthEastPoint(PointHelper[] vertexes) {
+    public static GeoHelper getNorthEastPoint(GeoHelper[] vertexes) {
         if (vertexes == null || vertexes.length == 0) {
             throw new IllegalArgumentException("vertexes 不能为空");
         }
         double maxLng = vertexes[0].getLongitude();
         double maxLat = vertexes[0].getLatitude();
         CoordinateSystem cs = vertexes[0].getCoordinateSystem();
-        for (PointHelper pointHelper : vertexes) {
-            double x = pointHelper.getLongitude();
-            double y = pointHelper.getLatitude();
+        for (GeoHelper geoHelper : vertexes) {
+            double x = geoHelper.getLongitude();
+            double y = geoHelper.getLatitude();
             if (x > maxLng) {
                 maxLng = x;
             }
@@ -463,7 +463,7 @@ public class PointHelper {
                 maxLat = y;
             }
         }
-        return new PointHelper(maxLng, maxLat, cs);
+        return new GeoHelper(maxLng, maxLat, cs);
     }
 
     /**
@@ -473,7 +473,7 @@ public class PointHelper {
      * @param lat 纬度
      * @return 坐标点工具类 (GCJ02)
      */
-    public static PointHelper wgs84ToGcj02(double lng, double lat) {
+    public static GeoHelper wgs84ToGcj02(double lng, double lat) {
         if (isOutOfChinaRectangle(lng, lat)) {
             return ofGCJ02(lng, lat);
         }
@@ -497,7 +497,7 @@ public class PointHelper {
      * @param lat 纬度
      * @return 坐标点工具类 (WGS84)
      */
-    public static PointHelper gcj02ToWgs84(double lng, double lat) {
+    public static GeoHelper gcj02ToWgs84(double lng, double lat) {
         if (isOutOfChinaRectangle(lng, lat)) {
             return ofWGS84(lng, lat);
         }
@@ -521,7 +521,7 @@ public class PointHelper {
      * @param lat 纬度
      * @return 坐标点工具类 (BD09)
      */
-    public static PointHelper gcj02ToBd09(double lng, double lat) {
+    public static GeoHelper gcj02ToBd09(double lng, double lat) {
         double z = Math.sqrt(lng * lng + lat * lat) + 0.00002 * Math.sin(lat * BD09_PI);
         double theta = Math.atan2(lat, lng) + 0.000003 * Math.cos(lng * BD09_PI);
 
@@ -536,7 +536,7 @@ public class PointHelper {
      * @param lat 纬度
      * @return 坐标点工具类 (GCJ02)
      */
-    public static PointHelper bd09ToGcj02(double lng, double lat) {
+    public static GeoHelper bd09ToGcj02(double lng, double lat) {
         double x = lng - 0.0065;
         double y = lat - 0.006;
         double z = Math.sqrt(x * x + y * y) - 0.00002 * Math.sin(y * BD09_PI);
@@ -608,10 +608,10 @@ public class PointHelper {
      * @param point 坐标点
      * @return 距离 (米)
      */
-    public double getDistanceMeters(PointHelper point) {
+    public double getDistanceMeters(GeoHelper point) {
         // 先统一转 WGS84
-        PointHelper p1 = this.toWGS84();
-        PointHelper p2 = point.toWGS84();
+        GeoHelper p1 = this.toWGS84();
+        GeoHelper p2 = point.toWGS84();
         // 调用纯静态方法，避免内部再创建对象
         return calculateHaversineDistance(p1.longitude, p1.latitude, p2.longitude, p2.latitude);
     }
@@ -622,7 +622,7 @@ public class PointHelper {
      * @param point 坐标点
      * @return 距离 (千米)
      */
-    public double getDistanceKilometers(PointHelper point) {
+    public double getDistanceKilometers(GeoHelper point) {
         return getDistanceMeters(point) / 1000.0;
     }
 
@@ -633,7 +633,7 @@ public class PointHelper {
      * @param radius 半径 (米)
      * @return boolean
      */
-    public boolean isInCircle(PointHelper circle, double radius) {
+    public boolean isInCircle(GeoHelper circle, double radius) {
         return getDistanceMeters(circle) <= radius;
     }
 
@@ -643,11 +643,11 @@ public class PointHelper {
      * @param boundaryPoints 边界点列表
      * @return boolean
      */
-    public boolean isInPolygon(List<PointHelper> boundaryPoints) {
+    public boolean isInPolygon(List<GeoHelper> boundaryPoints) {
         if (boundaryPoints == null || boundaryPoints.size() < 3) {
             return false;
         }
-        return isInPolygon(boundaryPoints.toArray(new PointHelper[0]));
+        return isInPolygon(boundaryPoints.toArray(new GeoHelper[0]));
     }
 
     /**
@@ -656,18 +656,18 @@ public class PointHelper {
      * @param boundaryPoints 边界点数组
      * @return boolean
      */
-    private boolean isInPolygon(PointHelper[] boundaryPoints) {
+    private boolean isInPolygon(GeoHelper[] boundaryPoints) {
         if (boundaryPoints == null || boundaryPoints.length < 3) {
             return false;
         }
 
         // 优化点：合并多重循环。在坐标对齐的同时，同步计算外包矩形 (AABB) 的四个极值
-        PointHelper[] alignedPoints = new PointHelper[boundaryPoints.length];
+        GeoHelper[] alignedPoints = new GeoHelper[boundaryPoints.length];
         double minLng = Double.MAX_VALUE, maxLng = -Double.MAX_VALUE;
         double minLat = Double.MAX_VALUE, maxLat = -Double.MAX_VALUE;
 
         for (int i = 0; i < boundaryPoints.length; i++) {
-            PointHelper p = boundaryPoints[i];
+            GeoHelper p = boundaryPoints[i];
             if (p == null) continue; // 防御性检查
 
             p = p.to(this.coordinateSystem);
@@ -690,8 +690,8 @@ public class PointHelper {
         boolean result = false;
         int j = alignedPoints.length - 1;
         for (int i = 0; i < alignedPoints.length; i++) {
-            PointHelper p1 = alignedPoints[i];
-            PointHelper p2 = alignedPoints[j];
+            GeoHelper p1 = alignedPoints[i];
+            GeoHelper p2 = alignedPoints[j];
 
             if (p1 == null || p2 == null) {
                 j = i;
@@ -722,7 +722,7 @@ public class PointHelper {
     /**
      * 判断当前点是否在指定线段上 (允许误差)
      */
-    private boolean isOnSegment(PointHelper p1, PointHelper p2) {
+    private boolean isOnSegment(GeoHelper p1, GeoHelper p2) {
         double precision = SEGMENT_PRECISION;
         // 1. 快速排除外包矩形
         if (this.longitude < Math.min(p1.getLongitude(), p2.getLongitude()) - precision ||
@@ -746,9 +746,9 @@ public class PointHelper {
      * @param point2 线段顶点2
      * @return boolean
      */
-    public boolean isInRectangleArea(PointHelper point1, PointHelper point2) {
-        PointHelper p1 = point1.to(this.coordinateSystem);
-        PointHelper p2 = point2.to(this.coordinateSystem);
+    public boolean isInRectangleArea(GeoHelper point1, GeoHelper point2) {
+        GeoHelper p1 = point1.to(this.coordinateSystem);
+        GeoHelper p2 = point2.to(this.coordinateSystem);
         return this.longitude >= Math.min(p1.getLongitude(), p2.getLongitude())
                 && this.longitude <= Math.max(p1.getLongitude(), p2.getLongitude())
                 && this.latitude >= Math.min(p1.getLatitude(), p2.getLatitude())
@@ -761,10 +761,10 @@ public class PointHelper {
      * @param boundaryPoints 边界点数组
      * @return boolean
      */
-    public boolean isInRectangleBoundary(PointHelper[] boundaryPoints) {
+    public boolean isInRectangleBoundary(GeoHelper[] boundaryPoints) {
         // 复用 getSouthWest/NorthEast 逻辑，并统一坐标系
-        PointHelper southWestPoint = getSouthWestPoint(boundaryPoints).to(this.coordinateSystem);
-        PointHelper northEastPoint = getNorthEastPoint(boundaryPoints).to(this.coordinateSystem);
+        GeoHelper southWestPoint = getSouthWestPoint(boundaryPoints).to(this.coordinateSystem);
+        GeoHelper northEastPoint = getNorthEastPoint(boundaryPoints).to(this.coordinateSystem);
         boolean b1 = this.longitude >= southWestPoint.getLongitude();
         boolean b2 = this.latitude >= southWestPoint.getLatitude();
         boolean b3 = this.longitude <= northEastPoint.getLongitude();
@@ -777,7 +777,7 @@ public class PointHelper {
      *
      * @return 坐标点工具类 (WGS84)
      */
-    public PointHelper toWGS84() {
+    public GeoHelper toWGS84() {
         if (this.coordinateSystem == CoordinateSystem.WGS84) {
             return this;
         }
@@ -785,7 +785,7 @@ public class PointHelper {
             return gcj02ToWgs84(this.longitude, this.latitude);
         }
         if (this.coordinateSystem == CoordinateSystem.BD09) {
-            PointHelper gcj = bd09ToGcj02(this.longitude, this.latitude);
+            GeoHelper gcj = bd09ToGcj02(this.longitude, this.latitude);
             return gcj02ToWgs84(gcj.longitude, gcj.latitude);
         }
         return this;
@@ -796,7 +796,7 @@ public class PointHelper {
      *
      * @return 坐标点工具类 (GCJ02)
      */
-    public PointHelper toGCJ02() {
+    public GeoHelper toGCJ02() {
         if (this.coordinateSystem == CoordinateSystem.GCJ02) {
             return this;
         }
@@ -814,7 +814,7 @@ public class PointHelper {
      *
      * @return 坐标点工具类 (BD09)
      */
-    public PointHelper toBD09() {
+    public GeoHelper toBD09() {
         if (this.coordinateSystem == CoordinateSystem.BD09) {
             return this;
         }
@@ -823,7 +823,7 @@ public class PointHelper {
         }
         if (this.coordinateSystem == CoordinateSystem.WGS84) {
             // WGS84 -> GCJ02 -> BD09
-            PointHelper gcj = wgs84ToGcj02(this.longitude, this.latitude);
+            GeoHelper gcj = wgs84ToGcj02(this.longitude, this.latitude);
             return gcj02ToBd09(gcj.longitude, gcj.latitude);
         }
         return this;
@@ -835,7 +835,7 @@ public class PointHelper {
      * @param target 目标坐标系
      * @return 坐标点工具类
      */
-    public PointHelper to(CoordinateSystem target) {
+    public GeoHelper to(CoordinateSystem target) {
         if (target == null || target == this.coordinateSystem) {
             return this;
         }

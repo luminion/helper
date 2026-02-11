@@ -9,18 +9,30 @@ import java.math.BigDecimal;
 import java.util.List;
 
 /**
- * 坐标点
+ * 坐标点工具类
+ * <p>
+ * 支持 WGS84, GCJ02, BD09 坐标系及其相互转换、距离计算、区域判断
  *
  * @author luminion
- * @link <a href=
- *       "https://blog.csdn.net/zheng12tian/article/details/40617445">交点法判断点是否在多边形内</a>
- * @link <a href=
- *       "https://blog.csdn.net/a704397849/article/details/121133616">坐标系转化</a>
  */
 @Getter
 @EqualsAndHashCode
 @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
 public class PointHelper {
+
+    /**
+     * 坐标系常量：WGS84 (大地坐标系，GPS默认)
+     */
+    public static final int CS_WGS84 = 0;
+    /**
+     * 坐标系常量：GCJ02 (火星坐标系，高德、腾讯、谷歌中国)
+     */
+    public static final int CS_GCJ02 = 1;
+    /**
+     * 坐标系常量：BD09 (百度坐标系)
+     */
+    public static final int CS_BD09 = 2;
+
     private static final double x_PI = 3.14159265358979324 * 3000.0 / 180.0;
     private static final double PI = 3.1415926535897932384626;
     /**
@@ -41,29 +53,50 @@ public class PointHelper {
      */
     private final double latitude;
 
+    /**
+     * 当前坐标系类型
+     */
+    private final int coordinateSystem;
+
+    // ================= Factory Methods =================
+
+    /**
+     * 构建坐标点 (默认 WGS84)
+     */
     public static PointHelper of(double longitude, double latitude) {
-        return new PointHelper(longitude, latitude);
-    }
-
-    public static PointHelper of(String longitude, String latitude) {
-        return new PointHelper(Double.parseDouble(longitude), Double.parseDouble(latitude));
-    }
-
-    public static PointHelper of(BigDecimal longitude, BigDecimal latitude) {
-        return new PointHelper(longitude.doubleValue(), latitude.doubleValue());
+        return new PointHelper(longitude, latitude, CS_WGS84);
     }
 
     /**
-     * 获取距离米
-     *
-     * @param longitude1 经度1
-     * @param latitude1  纬度1
-     * @param longitude2 经度2
-     * @param latitude2  纬度2
-     * @return double
+     * 构建坐标点 (指定坐标系)
+     */
+    public static PointHelper of(double longitude, double latitude, int coordinateSystem) {
+        return new PointHelper(longitude, latitude, coordinateSystem);
+    }
+
+    public static PointHelper of(String longitude, String latitude) {
+        return new PointHelper(Double.parseDouble(longitude), Double.parseDouble(latitude), CS_WGS84);
+    }
+
+    public static PointHelper of(String longitude, String latitude, int coordinateSystem) {
+        return new PointHelper(Double.parseDouble(longitude), Double.parseDouble(latitude), coordinateSystem);
+    }
+
+    public static PointHelper of(BigDecimal longitude, BigDecimal latitude) {
+        return new PointHelper(longitude.doubleValue(), latitude.doubleValue(), CS_WGS84);
+    }
+
+    public static PointHelper of(BigDecimal longitude, BigDecimal latitude, int coordinateSystem) {
+        return new PointHelper(longitude.doubleValue(), latitude.doubleValue(), coordinateSystem);
+    }
+
+    // ================= Distance Calculations =================
+
+    /**
+     * 获取距离米 (默认视为 WGS84 进行计算)
      */
     public static double getDistanceMeters(double longitude1, double latitude1, double longitude2, double latitude2) {
-        return of(longitude1, latitude1).getDistanceMeters(of(longitude2, latitude2));
+        return of(longitude1, latitude1, CS_WGS84).getDistanceMeters(of(longitude2, latitude2, CS_WGS84));
     }
 
     public static double getDistanceMeters(String longitude1, String latitude1, String longitude2, String latitude2) {
@@ -79,15 +112,6 @@ public class PointHelper {
         return point1.getDistanceMeters(point2);
     }
 
-    /**
-     * 获取距离千米
-     *
-     * @param longitude1 经度1
-     * @param latitude1  纬度1
-     * @param longitude2 经度2
-     * @param latitude2  纬度2
-     * @return double
-     */
     public static double getDistanceKilometer(double longitude1, double latitude1, double longitude2,
                                               double latitude2) {
         return of(longitude1, latitude1).getDistanceKilometers(of(longitude2, latitude2));
@@ -107,164 +131,108 @@ public class PointHelper {
         return point1.getDistanceKilometers(point2);
     }
 
-    /**
-     * 是否在圆圈中
-     *
-     * @param point  点
-     * @param circle 圆点
-     * @param radius 半径
-     * @return boolean
-     */
+    // ================= Static Transformation Helpers =================
+    // 即使保留静态方法，内部也复用实例方法，确保逻辑统一
+
+    public static PointHelper transformBD09ToGCJ02(PointHelper point) {
+        // 如果传入的点已经是 GCJ02，直接返回，否则强制视为 BD09 并转换
+        if (point.getCoordinateSystem() == CS_GCJ02) return point;
+        return point.transformTo(CS_GCJ02);
+    }
+
+    public static PointHelper transformBD09ToGCJ02(double longitude, double latitude) {
+        return new PointHelper(longitude, latitude, CS_BD09).transformTo(CS_GCJ02);
+    }
+
+    public static PointHelper transformGCJ02ToBD09(PointHelper point) {
+        if (point.getCoordinateSystem() == CS_BD09) return point;
+        return point.transformTo(CS_BD09);
+    }
+
+    public static PointHelper transformGCJ02ToBD09(double longitude, double latitude) {
+        return new PointHelper(longitude, latitude, CS_GCJ02).transformTo(CS_BD09);
+    }
+
+    public static PointHelper transformGCJ02ToWGS84(PointHelper point) {
+        if (point.getCoordinateSystem() == CS_WGS84) return point;
+        return point.transformTo(CS_WGS84);
+    }
+
+    public static PointHelper transformGCJ02ToWGS84(double longitude, double latitude) {
+        return new PointHelper(longitude, latitude, CS_GCJ02).transformTo(CS_WGS84);
+    }
+
+    public static PointHelper transformWGS84ToGCJ02(PointHelper point) {
+        if (point.getCoordinateSystem() == CS_GCJ02) return point;
+        return point.transformTo(CS_GCJ02);
+    }
+
+    public static PointHelper transformWGS84ToGCJ02(double longitude, double latitude) {
+        return new PointHelper(longitude, latitude, CS_WGS84).transformTo(CS_GCJ02);
+    }
+
+    public static PointHelper transformBD09ToWGS84(PointHelper point) {
+        if (point.getCoordinateSystem() == CS_WGS84) return point;
+        return point.transformTo(CS_WGS84);
+    }
+
+    public static PointHelper transformBD09ToWGS84(double longitude, double latitude) {
+        return new PointHelper(longitude, latitude, CS_BD09).transformTo(CS_WGS84);
+    }
+
+    public static PointHelper transformWGS84ToBD09(PointHelper point) {
+        if (point.getCoordinateSystem() == CS_BD09) return point;
+        return point.transformTo(CS_BD09);
+    }
+
+    public static PointHelper transformWGS84ToBD09(double longitude, double latitude) {
+        return new PointHelper(longitude, latitude, CS_WGS84).transformTo(CS_BD09);
+    }
+
+    // ================= Geometry Static Helpers =================
+
     public static boolean isInCircle(PointHelper point, PointHelper circle, double radius) {
         return point.isInCircle(circle, radius);
     }
 
-    /**
-     * 判断点是否在区域内
-     *
-     * @param point          点
-     * @param boundaryPoints 区域边界顶点
-     * @return boolean
-     */
     public static boolean isPointInPolygon(PointHelper point, PointHelper... boundaryPoints) {
         return point.isInPolygon(boundaryPoints);
     }
 
-    /**
-     * 百度坐标（BD09）转 GCJ02
-     *
-     * @param point BD09坐标点
-     * @return GCJ02 坐标点
-     */
-    public static PointHelper transformBD09ToGCJ02(PointHelper point) {
-        return point.transformBD09ToGCJ02();
-    }
-
-    public static PointHelper transformBD09ToGCJ02(double longitude, double latitude) {
-        return new PointHelper(longitude, latitude).transformBD09ToGCJ02();
-    }
-
-    /**
-     * GCJ02 转百度坐标
-     *
-     * @param point GCJ02坐标点
-     * @return 百度坐标点
-     */
-    public static PointHelper transformGCJ02ToBD09(PointHelper point) {
-        return point.transformGCJ02ToBD09();
-    }
-
-    public static PointHelper transformGCJ02ToBD09(double longitude, double latitude) {
-        return new PointHelper(longitude, latitude).transformGCJ02ToBD09();
-    }
-
-    /**
-     * GCJ02 转 WGS84
-     *
-     * @param point GCJ02坐标点
-     * @return WGS84坐标点
-     */
-    public static PointHelper transformGCJ02ToWGS84(PointHelper point) {
-        return point.transformGCJ02ToWGS84();
-    }
-
-    public static PointHelper transformGCJ02ToWGS84(double longitude, double latitude) {
-        return new PointHelper(longitude, latitude).transformGCJ02ToWGS84();
-    }
-
-    /**
-     * WGS84 坐标 转 GCJ02
-     *
-     * @param point WGS84坐标点
-     * @return GCJ02 坐标点
-     */
-    public static PointHelper transformWGS84ToGCJ02(PointHelper point) {
-        return point.transformWGS84ToGCJ02();
-    }
-
-    public static PointHelper transformWGS84ToGCJ02(double longitude, double latitude) {
-        return new PointHelper(longitude, latitude).transformWGS84ToGCJ02();
-    }
-
-    /**
-     * 百度坐标BD09 转 WGS84
-     *
-     * @param point BD09坐标点
-     * @return WGS84 坐标点
-     */
-    public static PointHelper transformBD09ToWGS84(PointHelper point) {
-        return point.transformBD09ToWGS84();
-    }
-
-    public static PointHelper transformBD09ToWGS84(double longitude, double latitude) {
-        return new PointHelper(longitude, latitude).transformBD09ToWGS84();
-    }
-
-    /**
-     * WGS84 转 百度坐标BD09
-     *
-     * @param point WGS84坐标点
-     * @return BD09 坐标点
-     */
-    public static PointHelper transformWGS84ToBD09(PointHelper point) {
-        return point.transformWGS84ToBD09();
-    }
-
-    public static PointHelper transformWGS84ToBD09(double longitude, double latitude) {
-        return new PointHelper(longitude, latitude).transformWGS84ToBD09();
-    }
-
-    /**
-     * 根据这组坐标，画一个矩形，然后得到这个矩形西南角的顶点坐标
-     *
-     * @param vertexes 顶点
-     * @return {@link PointHelper }
-     */
     public static PointHelper getSouthWestPoint(PointHelper[] vertexes) {
         double minLng = vertexes[0].getLongitude();
         double minLat = vertexes[0].getLatitude();
+        // 保持输入点的坐标系
+        int sys = vertexes[0].getCoordinateSystem();
+
         for (PointHelper pointHelper : vertexes) {
             double x = pointHelper.getLongitude();
             double y = pointHelper.getLatitude();
-            if (x < minLng) {
-                minLng = x;
-            }
-            if (y < minLat) {
-                minLat = y;
-            }
+            if (x < minLng) minLng = x;
+            if (y < minLat) minLat = y;
         }
-        return new PointHelper(minLng, minLat);
+        return new PointHelper(minLng, minLat, sys);
     }
 
-    /**
-     * 根据这组坐标，画一个矩形，然后得到这个矩形东北角的顶点坐标
-     *
-     * @param vertexes 顶点
-     * @return {@link PointHelper }
-     */
     public static PointHelper getNorthEastPoint(PointHelper[] vertexes) {
         double maxLng = vertexes[0].getLongitude();
         double maxLat = vertexes[0].getLatitude();
+        int sys = vertexes[0].getCoordinateSystem();
+
         for (PointHelper pointHelper : vertexes) {
             double x = pointHelper.getLongitude();
             double y = pointHelper.getLatitude();
-            if (x > maxLng) {
-                maxLng = x;
-            }
-            if (y > maxLat) {
-                maxLat = y;
-            }
+            if (x > maxLng) maxLng = x;
+            if (y > maxLat) maxLat = y;
         }
-        return new PointHelper(maxLng, maxLat);
+        return new PointHelper(maxLng, maxLat, sys);
     }
+
+
+    // ================= Internal Logic =================
 
     /**
      * 判断坐标是否不在国内
-     * 这是一个矩形框。中国版图并非矩形。这会导致如果在国外但在该矩形框延伸区域内（如部分邻国区域）
-     *
-     * @param lng 经度
-     * @param lat 纬度
-     * @return 坐标一定不在国内时返回true, 返回false代表不确定
      */
     private static boolean isOutOfChinaRectangle(double lng, double lat) {
         return (lng < 72.004 || lng > 137.8347) || (lat < 0.8293 || lat > 55.8271);
@@ -294,74 +262,63 @@ public class PointHelper {
 
     /**
      * 获取距离 (米)
+     * <p>
+     * 逻辑修改：为了保证精度，如果两点坐标系不一致或不是WGS84，
+     * 会先将两者都转换为 WGS84 坐标系，再使用公式计算。
      *
-     * @param point 点
+     * @param point 目标点
      * @return double
      */
     public double getDistanceMeters(PointHelper point) {
-        // 用户纬度
-        double userLongitude = Math.toRadians(point.getLongitude());
-        double userLatitude = Math.toRadians(point.getLatitude());
+        PointHelper p1 = this;
+        PointHelper p2 = point;
 
-        double longitude = Math.toRadians(this.longitude);
-        double latitude = Math.toRadians(this.latitude);
-        // 纬度之差
+        // 统一转换为 WGS84 计算，保证 Haversine 公式的准确性
+        if (p1.coordinateSystem != CS_WGS84) {
+            p1 = p1.transformTo(CS_WGS84);
+        }
+        if (p2.coordinateSystem != CS_WGS84) {
+            p2 = p2.transformTo(CS_WGS84);
+        }
+
+        double userLongitude = Math.toRadians(p2.getLongitude());
+        double userLatitude = Math.toRadians(p2.getLatitude());
+        double longitude = Math.toRadians(p1.getLongitude());
+        double latitude = Math.toRadians(p1.getLatitude());
+
         double a = userLatitude - latitude;
-        // 经度之差
         double b = userLongitude - longitude;
-        // 计算两点距离的公式
+
         double s = 2 * Math.asin(Math.sqrt(Math.pow(Math.sin(a / 2), 2)
                 + Math.cos(userLatitude) * Math.cos(latitude) * Math.pow(Math.sin(b / 2), 2)));
-        // 弧长乘赤道半径, 返回单位: 米
         s = s * EARTH_RADIUS_WGS84;
         return s;
     }
 
-    /**
-     * 获取距离 (千米)
-     *
-     * @param point 点
-     * @return double
-     */
     public double getDistanceKilometers(PointHelper point) {
-        return getDistanceMeters(point) / 1000;
+        return getDistanceMeters(point) / 1000.0;
     }
 
-    /**
-     * 是否在圆圈中
-     *
-     * @param circle 圆心
-     * @param radius 半径(米)
-     * @return boolean
-     */
     public boolean isInCircle(PointHelper circle, double radius) {
         return getDistanceMeters(circle) <= radius;
     }
 
-    /**
-     * 是否在指定区域内(基本思路是用交点法)
-     *
-     * @param boundaryPoints 边界点
-     * @return boolean
-     */
     public boolean isInPolygon(List<PointHelper> boundaryPoints) {
         return isInPolygon(boundaryPoints.toArray(new PointHelper[0]));
     }
 
     /**
      * 判断点是否在区域内
+     * 注意：此方法未强制转换坐标系，请确保当前点与边界点坐标系一致，否则结果可能不准确。
      *
      * @param boundaryPoints 边界点
      * @return boolean
      */
     public boolean isInPolygon(PointHelper[] boundaryPoints) {
         boolean result = false;
-        // 防止数据异常
         if (boundaryPoints == null || boundaryPoints.length < 3) {
             return false;
         }
-
-        // 首先判断外包矩形，快速失败
         if (!isInRectangleBoundary(boundaryPoints)) {
             return false;
         }
@@ -371,31 +328,13 @@ public class PointHelper {
             PointHelper p1 = boundaryPoints[i];
             PointHelper p2 = boundaryPoints[j];
 
-            // 1. 判断是否在线段上 (包含端点)
             if (this.isOnSegment(p1, p2)) {
                 return true;
             }
 
-            // 2. 射线法逻辑 (X轴向右射线)
-            // 判断边的两端点是否在射线的两侧 (p1.lat < lat <= p2.lat 或者 p2.lat < lat <= p1.lat)
-            // 仅仅当射线的一条边穿越射线时才做计算 (左闭右开 或者 左开右闭，防止顶点重复计算)
             if ((p1.getLatitude() < this.latitude && p2.getLatitude() >= this.latitude)
                     || (p2.getLatitude() < this.latitude && p1.getLatitude() >= this.latitude)) {
 
-                // 计算交点的 X 坐标
-                // x = x1 + (y - y1) * (x2 - x1) / (y2 - y1)
-                // 为了避免除法精度问题，使用乘法形式判断:
-                // 如果 point.x < intersection.x，则射线穿过该边。
-                // 等价于: point.x - x1 < (y - y1) * (x2 - x1) / (y2 - y1)
-                // 再变形(注意 y2-y1 正负号): (point.x - x1) * (y2 - y1) < (y - y1) * (x2 - x1)
-                // (这也是叉积的一种形式)
-
-                // 叉积判断: Cross(Vector(P1, P), Vector(P1, P2))
-                // 如果结果与其纬度差方向不一致，说明点在交点左侧
-                // 这里采用更直观的交点公式，但在除法前转为乘法比较并注意符号
-                // 只有当点在交点左侧时，result 取反
-
-                // 简单点：计算交点 intersectX
                 double intersectX = p1.getLongitude() + (this.latitude - p1.getLatitude())
                         * (p2.getLongitude() - p1.getLongitude()) / (p2.getLatitude() - p1.getLatitude());
 
@@ -405,43 +344,22 @@ public class PointHelper {
             }
             j = i;
         }
-
         return result;
     }
 
-    /**
-     * 判断当前点是否在指定线段上 (允许误差)
-     */
     private boolean isOnSegment(PointHelper p1, PointHelper p2) {
-        //double precision = 2e-10; // 毫米精度
-        double precision = 1e-7;// 厘米精度
-        // 1. 快速排除外包矩形
+        double precision = 1e-7;
         if (this.longitude < Math.min(p1.getLongitude(), p2.getLongitude()) - precision ||
                 this.longitude > Math.max(p1.getLongitude(), p2.getLongitude()) + precision ||
                 this.latitude < Math.min(p1.getLatitude(), p2.getLatitude()) - precision ||
                 this.latitude > Math.max(p1.getLatitude(), p2.getLatitude()) + precision) {
             return false;
         }
-
-        // 2. 叉积判断是否共线: (x - x1)*(y2 - y1) - (y - y1)*(x2 - x1)
         double crossProduct = (this.longitude - p1.getLongitude()) * (p2.getLatitude() - p1.getLatitude())
                 - (this.latitude - p1.getLatitude()) * (p2.getLongitude() - p1.getLongitude());
-
         return Math.abs(crossProduct) < precision;
     }
 
-    /**
-     * 判断是否在多边形边P上 (公共方法需严谨)
-     * <p>
-     * 实际上是判断是否在以 p1, p2 为对角线的矩形范围内。
-     * 原逻辑只判断了 Longitude，这是不安全的。
-     * 现修正为完整的矩形范围判断。如果需要严格判断是否在线段上，建议使用新的 isOnSegment 方法。
-     * 保持方法名兼容性，但修正逻辑。
-     *
-     * @param point1 point1 线段顶点1
-     * @param point2 point2 线段顶点2
-     * @return boolean
-     */
     public boolean isInRectangleArea(PointHelper point1, PointHelper point2) {
         return this.getLongitude() >= Math.min(point1.getLongitude(), point2.getLongitude())
                 && this.getLongitude() <= Math.max(point1.getLongitude(), point2.getLongitude())
@@ -449,28 +367,51 @@ public class PointHelper {
                 && this.getLatitude() <= Math.max(point1.getLatitude(), point2.getLatitude());
     }
 
-    /**
-     * 判断是否在指定坐标外包矩形边界上，也可以用于计算在矩形内(根据这些点，构造一个外包矩形)
-     *
-     * @param boundaryPoints 边界点
-     * @return boolean
-     */
     public boolean isInRectangleBoundary(PointHelper[] boundaryPoints) {
-        // 西南角点
         PointHelper southWestPoint = getSouthWestPoint(boundaryPoints);
-        // 东北角点
         PointHelper northEastPoint = getNorthEastPoint(boundaryPoints);
-        boolean b = this.getLongitude() >= southWestPoint.getLongitude();
-        boolean b3 = this.getLatitude() >= southWestPoint.getLatitude();
-        boolean b2 = this.getLongitude() <= northEastPoint.getLongitude();
-        boolean b4 = this.getLatitude() <= northEastPoint.getLatitude();
-        return b && b3 && b2 && b4;
+        return this.getLongitude() >= southWestPoint.getLongitude()
+                && this.getLatitude() >= southWestPoint.getLatitude()
+                && this.getLongitude() <= northEastPoint.getLongitude()
+                && this.getLatitude() <= northEastPoint.getLatitude();
+    }
+
+    // ================= Transformation Logic =================
+
+    /**
+     * 通用转换方法：将当前点转换为目标坐标系
+     *
+     * @param targetSystem 目标坐标系 (CS_WGS84, CS_GCJ02, CS_BD09)
+     * @return 新的坐标点
+     */
+    public PointHelper transformTo(int targetSystem) {
+        if (this.coordinateSystem == targetSystem) {
+            return this;
+        }
+
+        // 根据当前坐标系和目标坐标系选择路径
+        switch (this.coordinateSystem) {
+            case CS_WGS84:
+                if (targetSystem == CS_GCJ02) return this.transformWGS84ToGCJ02();
+                if (targetSystem == CS_BD09) return this.transformWGS84ToBD09();
+                break;
+            case CS_GCJ02:
+                if (targetSystem == CS_WGS84) return this.transformGCJ02ToWGS84();
+                if (targetSystem == CS_BD09) return this.transformGCJ02ToBD09();
+                break;
+            case CS_BD09:
+                if (targetSystem == CS_GCJ02) return this.transformBD09ToGCJ02();
+                if (targetSystem == CS_WGS84) return this.transformBD09ToWGS84();
+                break;
+            default:
+                throw new IllegalArgumentException("Unknown source coordinate system: " + this.coordinateSystem);
+        }
+        throw new IllegalArgumentException("Unknown target coordinate system: " + targetSystem);
     }
 
     /**
      * 百度坐标（BD09）转 GCJ02
-     *
-     * @return GCJ02 坐标点
+     * <p>注意：即使当前对象标记不是 BD09，调用此方法也会强制按 BD09 算法转换</p>
      */
     public PointHelper transformBD09ToGCJ02() {
         double x = this.longitude - 0.0065;
@@ -479,13 +420,11 @@ public class PointHelper {
         double theta = Math.atan2(y, x) - 0.000003 * Math.cos(x * x_PI);
         double gcj_lng = z * Math.cos(theta);
         double gcj_lat = z * Math.sin(theta);
-        return new PointHelper(gcj_lng, gcj_lat);
+        return new PointHelper(gcj_lng, gcj_lat, CS_GCJ02);
     }
 
     /**
      * GCJ02 转百度坐标
-     *
-     * @return 百度坐标：[经度，纬度]
      */
     public PointHelper transformGCJ02ToBD09() {
         double z = Math.sqrt(this.longitude * this.longitude + this.latitude * this.latitude)
@@ -493,17 +432,15 @@ public class PointHelper {
         double theta = Math.atan2(this.latitude, this.longitude) + 0.000003 * Math.cos(this.longitude * x_PI);
         double bd_lng = z * Math.cos(theta) + 0.0065;
         double bd_lat = z * Math.sin(theta) + 0.006;
-        return new PointHelper(bd_lng, bd_lat);
+        return new PointHelper(bd_lng, bd_lat, CS_BD09);
     }
 
     /**
      * GCJ02 转 WGS84
-     *
-     * @return WGS84坐标：[经度，纬度]
      */
     public PointHelper transformGCJ02ToWGS84() {
         if (isOutOfChinaRectangle(this.longitude, this.latitude)) {
-            return new PointHelper(this.longitude, this.latitude);
+            return new PointHelper(this.longitude, this.latitude, CS_WGS84);
         } else {
             double dLat = transformLat(this.longitude - 105.0, this.latitude - 35.0);
             double dLng = transformLng(this.longitude - 105.0, this.latitude - 35.0);
@@ -515,18 +452,16 @@ public class PointHelper {
             dLng = (dLng * 180.0) / (KRASOVSKY_A / sqrtMagic * Math.cos(radLat) * PI);
             double mgLat = this.latitude + dLat;
             double mgLng = this.longitude + dLng;
-            return new PointHelper(this.longitude * 2 - mgLng, this.latitude * 2 - mgLat);
+            return new PointHelper(this.longitude * 2 - mgLng, this.latitude * 2 - mgLat, CS_WGS84);
         }
     }
 
     /**
      * WGS84 坐标 转 GCJ02
-     *
-     * @return GCJ02 坐标：[经度，纬度]
      */
     public PointHelper transformWGS84ToGCJ02() {
         if (isOutOfChinaRectangle(this.longitude, this.latitude)) {
-            return new PointHelper(this.longitude, this.latitude);
+            return new PointHelper(this.longitude, this.latitude, CS_GCJ02);
         } else {
             double dLat = transformLat(this.longitude - 105.0, this.latitude - 35.0);
             double dLng = transformLng(this.longitude - 105.0, this.latitude - 35.0);
@@ -538,14 +473,12 @@ public class PointHelper {
             dLng = (dLng * 180.0) / (KRASOVSKY_A / sqrtMagic * Math.cos(redLat) * PI);
             double mgLat = this.latitude + dLat;
             double mgLng = this.longitude + dLng;
-            return new PointHelper(mgLng, mgLat);
+            return new PointHelper(mgLng, mgLat, CS_GCJ02);
         }
     }
 
     /**
      * 百度坐标BD09 转 WGS84
-     *
-     * @return WGS84 坐标：[经度，纬度]
      */
     public PointHelper transformBD09ToWGS84() {
         PointHelper gcj02Point = transformBD09ToGCJ02();
@@ -554,12 +487,9 @@ public class PointHelper {
 
     /**
      * WGS84 转 百度坐标BD09
-     *
-     * @return BD09 坐标：[经度，纬度]
      */
     public PointHelper transformWGS84ToBD09() {
         PointHelper gcj02Point = transformWGS84ToGCJ02();
         return gcj02Point.transformGCJ02ToBD09();
     }
-
 }

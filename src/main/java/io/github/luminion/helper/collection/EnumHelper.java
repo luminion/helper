@@ -107,7 +107,7 @@ public class EnumHelper<E extends Enum<E>, K> {
             K k = keyGetter.apply(e);
             V v = valueGetter.apply(e);
             if (k != null && v != null) {
-                map.put(k, valueGetter.apply(e));
+                map.put(k, v);
             }
         }
         return map;
@@ -148,7 +148,13 @@ public class EnumHelper<E extends Enum<E>, K> {
      * @return 映射的Map
      */
     public <V> Map<K, V> resolveMap(Function<E, V> valueGetter) {
-        return keyMap.entrySet().stream()
-                .collect(Collectors.toMap(Map.Entry::getKey, e -> valueGetter.apply(e.getValue())));
+        Map<K, V> result = new LinkedHashMap<>();
+        for (Map.Entry<K, E> entry : keyMap.entrySet()) {
+            V v = valueGetter.apply(entry.getValue());
+            if (v != null) {
+                result.put(entry.getKey(), v);
+            }
+        }
+        return result;
     }
 }

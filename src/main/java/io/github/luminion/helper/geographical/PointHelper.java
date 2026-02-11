@@ -11,23 +11,19 @@ import java.util.List;
  *
  * 支持：
  * - WGS84 / GCJ02 / BD09 坐标系标记
- * - 距离计算（内部自动转为 WGS84 进行计算）
+ * - 距离计算
  * - 点在圆内、多边形内判断
  * - 坐标系相互转换：toWGS84 / toGCJ02 / toBD09 / to(CoordinateSystem)
  *
  * 注意：
  * - PointHelper 实例内部的经纬度值始终对应其 {@link CoordinateSystem} 字段标记的坐标系
- * - 距离计算会将双方转换为 WGS84 后再计算
  *
- * @author lumin…
+ * @author luminion
  */
 @Getter
 @EqualsAndHashCode
 public class PointHelper {
 
-    /**
-     * 坐标系
-     */
     /**
      * 坐标系类型
      */
@@ -72,9 +68,12 @@ public class PointHelper {
     private static final double KRASOVSKY_EE = 0.00669342162296594323;
 
     /**
-     * WGS84 椭球体近似半径 (米) —— 用于 Haversine 距离
+     * 地球平均半径 (米)
+     * <p>
+     * 修正：Haversine 公式基于正球体模型，使用平均半径 (6371km) 比使用赤道半径 (6378km) 在全球范围内的平均误差更小。
+     * </p>
      */
-    private static final double EARTH_RADIUS_WGS84 = 6378137.0;
+    private static final double EARTH_RADIUS_AVERAGE = 6371008.8;
 
     /**
      * 线段共线判断的精度（度）
@@ -267,8 +266,32 @@ public class PointHelper {
         return longitude >= -180.0 && longitude <= 180.0 && latitude >= -90.0 && latitude <= 90.0;
     }
 
+    // ==================== 静态工具方法 (距离计算) ====================
+
     /**
-     * 获取两个坐标点之间的距离
+     * 内部私有方法：计算两点间的 Haversine 距离（纯数学计算，不创建对象）
+     *
+     * @param lng1 起点经度
+     * @param lat1 起点纬度
+     * @param lng2 终点经度
+     * @param lat2 终点纬度
+     * @return 距离 (米)
+     */
+    private static double calculateHaversineDistance(double lng1, double lat1, double lng2, double lat2) {
+        double radLat1 = Math.toRadians(lat1);
+        double radLat2 = Math.toRadians(lat2);
+        double a = radLat1 - radLat2;
+        double b = Math.toRadians(lng1) - Math.toRadians(lng2);
+
+        double s = 2 * Math.asin(Math.sqrt(
+                Math.pow(Math.sin(a / 2), 2) +
+                        Math.cos(radLat1) * Math.cos(radLat2) * Math.pow(Math.sin(b / 2), 2)
+        ));
+        return s * EARTH_RADIUS_AVERAGE;
+    }
+
+    /**
+     * 获取两个 WGS84 坐标点之间的距离
      *
      * @param longitude1 起点经度 (WGS84)
      * @param latitude1  起点纬度 (WGS84)
@@ -276,12 +299,13 @@ public class PointHelper {
      * @param latitude2  终点纬度 (WGS84)
      * @return 距离 (米)
      */
-    public static double getDistanceMeters(double longitude1, double latitude1, double longitude2, double latitude2) {
-        return ofWGS84(longitude1, latitude1).getDistanceMeters(ofWGS84(longitude2, latitude2));
+    public static double getDistanceMetersWgs84(double longitude1, double latitude1, double longitude2,
+                                                double latitude2) {
+        return calculateHaversineDistance(longitude1, latitude1, longitude2, latitude2);
     }
 
     /**
-     * 获取两个坐标点之间的距离
+     * 获取两个 WGS84 坐标点之间的距离
      *
      * @param longitude1 起点经度 (WGS84)
      * @param latitude1  起点纬度 (WGS84)
@@ -289,12 +313,16 @@ public class PointHelper {
      * @param latitude2  终点纬度 (WGS84)
      * @return 距离 (米)
      */
-    public static double getDistanceMeters(String longitude1, String latitude1, String longitude2, String latitude2) {
-        return ofWGS84(longitude1, latitude1).getDistanceMeters(ofWGS84(longitude2, latitude2));
+    public static double getDistanceMetersWgs84(String longitude1, String latitude1, String longitude2,
+                                                String latitude2) {
+        return getDistanceMetersWgs84(
+                Double.parseDouble(longitude1.trim()), Double.parseDouble(latitude1.trim()),
+                Double.parseDouble(longitude2.trim()), Double.parseDouble(latitude2.trim())
+        );
     }
 
     /**
-     * 获取两个坐标点之间的距离
+     * 获取两个 WGS84 坐标点之间的距离
      *
      * @param longitude1 起点经度 (WGS84)
      * @param latitude1  起点纬度 (WGS84)
@@ -302,12 +330,89 @@ public class PointHelper {
      * @param latitude2  终点纬度 (WGS84)
      * @return 距离 (米)
      */
-    public static double getDistanceMeters(BigDecimal longitude1, BigDecimal latitude1,
-            BigDecimal longitude2, BigDecimal latitude2) {
-        return ofWGS84(longitude1, latitude1).getDistanceMeters(ofWGS84(longitude2, latitude2));
+    public static double getDistanceMetersWgs84(BigDecimal longitude1, BigDecimal latitude1,
+                                                BigDecimal longitude2, BigDecimal latitude2) {
+        return getDistanceMetersWgs84(
+                longitude1.doubleValue(), latitude1.doubleValue(),
+                longitude2.doubleValue(), latitude2.doubleValue()
+        );
     }
 
+    /**
+     * 获取两个 GCJ02 坐标点之间的距离
+     *
+     * @param longitude1 起点经度 (GCJ02)
+     * @param latitude1  起点纬度 (GCJ02)
+     * @param longitude2 终点经度 (GCJ02)
+     * @param latitude2  终点纬度 (GCJ02)
+     * @return 距离 (米)
+     */
+    public static double getDistanceMetersGcj02(double longitude1, double latitude1, double longitude2,
+                                                double latitude2) {
+        PointHelper p1 = gcj02ToWgs84(longitude1, latitude1);
+        PointHelper p2 = gcj02ToWgs84(longitude2, latitude2);
+        return calculateHaversineDistance(p1.longitude, p1.latitude, p2.longitude, p2.latitude);
+    }
 
+    public static double getDistanceMetersGcj02(String longitude1, String latitude1, String longitude2,
+                                                String latitude2) {
+        return getDistanceMetersGcj02(
+                Double.parseDouble(longitude1.trim()), Double.parseDouble(latitude1.trim()),
+                Double.parseDouble(longitude2.trim()), Double.parseDouble(latitude2.trim())
+        );
+    }
+
+    public static double getDistanceMetersGcj02(BigDecimal longitude1, BigDecimal latitude1,
+                                                BigDecimal longitude2, BigDecimal latitude2) {
+        return getDistanceMetersGcj02(
+                longitude1.doubleValue(), latitude1.doubleValue(),
+                longitude2.doubleValue(), latitude2.doubleValue()
+        );
+    }
+
+    /**
+     * 获取两个 BD09 坐标点之间的距离
+     *
+     * @param longitude1 起点经度 (BD09)
+     * @param latitude1  起点纬度 (BD09)
+     * @param longitude2 终点经度 (BD09)
+     * @param latitude2  终点纬度 (BD09)
+     * @return 距离 (米)
+     */
+    public static double getDistanceMetersBd09(double longitude1, double latitude1, double longitude2,
+                                               double latitude2) {
+        // BD09 -> GCJ02 -> WGS84
+        PointHelper p1 = bd09ToGcj02(longitude1, latitude1).toWGS84();
+        PointHelper p2 = bd09ToGcj02(longitude2, latitude2).toWGS84();
+        return calculateHaversineDistance(p1.longitude, p1.latitude, p2.longitude, p2.latitude);
+    }
+
+    public static double getDistanceMetersBd09(String longitude1, String latitude1, String longitude2,
+                                               String latitude2) {
+        return getDistanceMetersBd09(
+                Double.parseDouble(longitude1.trim()), Double.parseDouble(latitude1.trim()),
+                Double.parseDouble(longitude2.trim()), Double.parseDouble(latitude2.trim())
+        );
+    }
+
+    public static double getDistanceMetersBd09(BigDecimal longitude1, BigDecimal latitude1,
+                                               BigDecimal longitude2, BigDecimal latitude2) {
+        return getDistanceMetersBd09(
+                longitude1.doubleValue(), latitude1.doubleValue(),
+                longitude2.doubleValue(), latitude2.doubleValue()
+        );
+    }
+
+    /**
+     * 获取两个坐标点之间的距离
+     *
+     * @param point1 坐标点1
+     * @param point2 坐标点2
+     * @return 距离 (米)
+     */
+    public static double getDistanceMeters(PointHelper point1, PointHelper point2) {
+        return point1.getDistanceMeters(point2);
+    }
 
     /**
      * 获取这组坐标矩形西南角的顶点坐标
@@ -360,18 +465,6 @@ public class PointHelper {
         }
         return new PointHelper(maxLng, maxLat, cs);
     }
-    
-
-    /**
-     * 获取两个坐标点之间的距离
-     *
-     * @param point1 坐标点1
-     * @param point2 坐标点2
-     * @return 距离 (米)
-     */
-    public static double getDistanceMeters(PointHelper point1, PointHelper point2) {
-        return point1.getDistanceMeters(point2);
-    }
 
     /**
      * WGS84 -> GCJ02
@@ -392,7 +485,9 @@ public class PointHelper {
         double sqrtMagic = Math.sqrt(magic);
         dLat = (dLat * 180.0) / ((KRASOVSKY_A * (1 - KRASOVSKY_EE)) / (magic * sqrtMagic) * Math.PI);
         dLng = (dLng * 180.0) / (KRASOVSKY_A / sqrtMagic * Math.cos(radLat) * Math.PI);
-        return ofGCJ02(lng + dLng, lat + dLat);
+
+        // 转换结果归一化，防止经纬度越界导致异常
+        return ofGCJ02(normalizeLongitude(lng + dLng), normalizeLatitude(lat + dLat));
     }
 
     /**
@@ -414,7 +509,9 @@ public class PointHelper {
         double sqrtMagic = Math.sqrt(magic);
         dLat = (dLat * 180.0) / ((KRASOVSKY_A * (1 - KRASOVSKY_EE)) / (magic * sqrtMagic) * Math.PI);
         dLng = (dLng * 180.0) / (KRASOVSKY_A / sqrtMagic * Math.cos(radLat) * Math.PI);
-        return ofWGS84(lng * 2 - (lng + dLng), lat * 2 - (lat + dLat));
+
+        // 转换结果归一化，防止经纬度越界导致异常
+        return ofWGS84(normalizeLongitude(lng * 2 - (lng + dLng)), normalizeLatitude(lat * 2 - (lat + dLat)));
     }
 
     /**
@@ -427,7 +524,9 @@ public class PointHelper {
     public static PointHelper gcj02ToBd09(double lng, double lat) {
         double z = Math.sqrt(lng * lng + lat * lat) + 0.00002 * Math.sin(lat * BD09_PI);
         double theta = Math.atan2(lat, lng) + 0.000003 * Math.cos(lng * BD09_PI);
-        return ofBD09(z * Math.cos(theta) + 0.0065, z * Math.sin(theta) + 0.006);
+
+        // 转换结果归一化，防止经纬度越界导致异常
+        return ofBD09(normalizeLongitude(z * Math.cos(theta) + 0.0065), normalizeLatitude(z * Math.sin(theta) + 0.006));
     }
 
     /**
@@ -442,7 +541,30 @@ public class PointHelper {
         double y = lat - 0.006;
         double z = Math.sqrt(x * x + y * y) - 0.00002 * Math.sin(y * BD09_PI);
         double theta = Math.atan2(y, x) - 0.000003 * Math.cos(x * BD09_PI);
-        return ofGCJ02(z * Math.cos(theta), z * Math.sin(theta));
+
+        // 转换结果归一化，防止经纬度越界导致异常
+        return ofGCJ02(normalizeLongitude(z * Math.cos(theta)), normalizeLatitude(z * Math.sin(theta)));
+    }
+
+    /**
+     * 经度环绕处理：将经度约束在 [-180, 180] 之间
+     */
+    private static double normalizeLongitude(double lng) {
+        if (lng >= -180.0 && lng <= 180.0) {
+            return lng;
+        }
+        double x = (lng + 180.0) % 360.0;
+        if (x < 0) {
+            x += 360.0;
+        }
+        return x - 180.0;
+    }
+
+    /**
+     * 纬度截断处理：将纬度约束在 [-90, 90] 之间
+     */
+    private static double normalizeLatitude(double lat) {
+        return Math.max(-90.0, Math.min(90.0, lat));
     }
 
     /**
@@ -487,23 +609,11 @@ public class PointHelper {
      * @return 距离 (米)
      */
     public double getDistanceMeters(PointHelper point) {
+        // 先统一转 WGS84
         PointHelper p1 = this.toWGS84();
         PointHelper p2 = point.toWGS84();
-
-        double lng1 = Math.toRadians(p1.getLongitude());
-        double lat1 = Math.toRadians(p1.getLatitude());
-        double lng2 = Math.toRadians(p2.getLongitude());
-        double lat2 = Math.toRadians(p2.getLatitude());
-
-        double dLat = lat2 - lat1;
-        double dLng = lng2 - lng1;
-
-        double a = Math.pow(Math.sin(dLat / 2), 2) +
-                Math.cos(lat1) * Math.cos(lat2) * Math.pow(Math.sin(dLng / 2), 2);
-
-        double c = 2 * Math.asin(Math.sqrt(a));
-
-        return c * EARTH_RADIUS_WGS84;
+        // 调用纯静态方法，避免内部再创建对象
+        return calculateHaversineDistance(p1.longitude, p1.latitude, p2.longitude, p2.latitude);
     }
 
     /**
@@ -526,7 +636,6 @@ public class PointHelper {
     public boolean isInCircle(PointHelper circle, double radius) {
         return getDistanceMeters(circle) <= radius;
     }
-
 
     /**
      * 是否在多边形区域内
@@ -552,29 +661,49 @@ public class PointHelper {
             return false;
         }
 
-        // 生产级增强：自动对齐坐标系，防止混合坐标系导致的业务 Bug
+        // 优化点：合并多重循环。在坐标对齐的同时，同步计算外包矩形 (AABB) 的四个极值
         PointHelper[] alignedPoints = new PointHelper[boundaryPoints.length];
+        double minLng = Double.MAX_VALUE, maxLng = -Double.MAX_VALUE;
+        double minLat = Double.MAX_VALUE, maxLat = -Double.MAX_VALUE;
+
         for (int i = 0; i < boundaryPoints.length; i++) {
-            alignedPoints[i] = boundaryPoints[i].to(this.coordinateSystem);
+            PointHelper p = boundaryPoints[i];
+            if (p == null) continue; // 防御性检查
+
+            p = p.to(this.coordinateSystem);
+            alignedPoints[i] = p;
+
+            double lng = p.getLongitude();
+            double lat = p.getLatitude();
+            if (lng < minLng) minLng = lng;
+            if (lng > maxLng) maxLng = lng;
+            if (lat < minLat) minLat = lat;
+            if (lat > maxLat) maxLat = lat;
         }
 
-        // 外包矩形快速失败
-        if (!isInRectangleBoundary(alignedPoints)) {
+        // 外包矩形 (AABB) 快速失败检查
+        if (this.longitude < minLng || this.longitude > maxLng || this.latitude < minLat || this.latitude > maxLat) {
             return false;
         }
 
+        // 射线法 (Ray Casting Algorithm)
         boolean result = false;
         int j = alignedPoints.length - 1;
         for (int i = 0; i < alignedPoints.length; i++) {
             PointHelper p1 = alignedPoints[i];
             PointHelper p2 = alignedPoints[j];
 
-            // 1. 判断是否在线段上 (包含端点)
+            if (p1 == null || p2 == null) {
+                j = i;
+                continue;
+            }
+
+            // 判断是否在线段上
             if (this.isOnSegment(p1, p2)) {
                 return true;
             }
 
-            // 2. 射线法逻辑 (X轴向右射线)
+            // 射线逻辑
             if ((p1.getLatitude() < this.latitude && p2.getLatitude() >= this.latitude)
                     || (p2.getLatitude() < this.latitude && p1.getLatitude() >= this.latitude)) {
 
@@ -587,7 +716,6 @@ public class PointHelper {
             }
             j = i;
         }
-
         return result;
     }
 
@@ -619,10 +747,12 @@ public class PointHelper {
      * @return boolean
      */
     public boolean isInRectangleArea(PointHelper point1, PointHelper point2) {
-        return this.longitude >= Math.min(point1.getLongitude(), point2.getLongitude())
-                && this.longitude <= Math.max(point1.getLongitude(), point2.getLongitude())
-                && this.latitude >= Math.min(point1.getLatitude(), point2.getLatitude())
-                && this.latitude <= Math.max(point1.getLatitude(), point2.getLatitude());
+        PointHelper p1 = point1.to(this.coordinateSystem);
+        PointHelper p2 = point2.to(this.coordinateSystem);
+        return this.longitude >= Math.min(p1.getLongitude(), p2.getLongitude())
+                && this.longitude <= Math.max(p1.getLongitude(), p2.getLongitude())
+                && this.latitude >= Math.min(p1.getLatitude(), p2.getLatitude())
+                && this.latitude <= Math.max(p1.getLatitude(), p2.getLatitude());
     }
 
     /**
@@ -632,8 +762,9 @@ public class PointHelper {
      * @return boolean
      */
     public boolean isInRectangleBoundary(PointHelper[] boundaryPoints) {
-        PointHelper southWestPoint = getSouthWestPoint(boundaryPoints);
-        PointHelper northEastPoint = getNorthEastPoint(boundaryPoints);
+        // 复用 getSouthWest/NorthEast 逻辑，并统一坐标系
+        PointHelper southWestPoint = getSouthWestPoint(boundaryPoints).to(this.coordinateSystem);
+        PointHelper northEastPoint = getNorthEastPoint(boundaryPoints).to(this.coordinateSystem);
         boolean b1 = this.longitude >= southWestPoint.getLongitude();
         boolean b2 = this.latitude >= southWestPoint.getLatitude();
         boolean b3 = this.longitude <= northEastPoint.getLongitude();

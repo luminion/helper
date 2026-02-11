@@ -14,8 +14,12 @@ import java.util.Date;
  */
 @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
 public class DatetimeHelper {
-    public static final String PATTERN = "yyyy-MM-dd HH:mm:ss";
-    public static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern(PATTERN);
+    public static final DateTimeFormatter FORMATTER_DATE_TIME_ = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+    public static final DateTimeFormatter FORMATTER_DATE_HOUR_MINUTE = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
+    public static final DateTimeFormatter FORMATTER_DATE_HOUR = DateTimeFormatter.ofPattern("yyyy-MM-dd HH");
+    public static final DateTimeFormatter FORMATTER_DATE = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+    public static final DateTimeFormatter FORMATTER_TIME = DateTimeFormatter.ofPattern("HH:mm:ss");
+    public static final DateTimeFormatter FORMATTER_HOUR_MINUTE = DateTimeFormatter.ofPattern("HH:mm");
     private final ZonedDateTime zonedDateTime;
 
     /**
@@ -149,11 +153,11 @@ public class DatetimeHelper {
      */
     @Override
     public String toString() {
-        return toLocalDateTime().format(DATE_TIME_FORMATTER);
+        return toLocalDateTime().format(FORMATTER_DATE_TIME_);
     }
     
     public String toDateTimeString() {
-        return toLocalDateTime().format(DATE_TIME_FORMATTER);
+        return toLocalDateTime().format(FORMATTER_DATE_TIME_);
     }
 
     public String toTimeString() {

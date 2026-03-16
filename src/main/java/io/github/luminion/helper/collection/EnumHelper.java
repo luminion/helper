@@ -5,7 +5,6 @@ import io.github.luminion.helper.core.SFunc;
 
 import java.util.*;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 
 /**
  * 枚举助手，方便获取枚举中的key和value
@@ -90,6 +89,68 @@ public class EnumHelper<E extends Enum<E>, K> {
     }
 
     /**
+     * 批量根据key获取value列表
+     *
+     * @param keyGetter   获取指定属性的方法引用，如 UserType::getCode
+     * @param valueGetter 获取指定属性的方法引用，如 UserType::getName
+     * @param keys        键列表（可变参数）
+     * @param <E>         枚举类型
+     * @param <K>         键类型
+     * @param <V>         值类型
+     * @return 匹配的value列表
+     */
+    public static <E extends Enum<E>, K, V> List<V> resolveValues(SFunc<E, K> keyGetter, SFunc<E, V> valueGetter, K... keys) {
+        if (keys == null || keys.length == 0) {
+            return Collections.emptyList();
+        }
+        Class<E> clazz = LambdaHelper.resolveClass(keyGetter);
+        EnumSet<E> enumSet = EnumSet.allOf(clazz);
+        Set<K> keySet = new HashSet<>(Arrays.asList(keys));
+        List<V> values = new ArrayList<>();
+        for (E e : enumSet) {
+            K key = keyGetter.apply(e);
+            if (key != null && keySet.contains(key)) {
+                V value = valueGetter.apply(e);
+                if (value != null) {
+                    values.add(value);
+                }
+            }
+        }
+        return values;
+    }
+
+    /**
+     * 批量根据value获取key列表
+     *
+     * @param keyGetter   获取指定属性的方法引用，如 UserType::getCode
+     * @param valueGetter 获取指定属性的方法引用，如 UserType::getName
+     * @param values      值列表（可变参数）
+     * @param <E>         枚举类型
+     * @param <K>         键类型
+     * @param <V>         值类型
+     * @return 匹配的key列表
+     */
+    public static <E extends Enum<E>, K, V> List<K> resolveKeys(SFunc<E, K> keyGetter, SFunc<E, V> valueGetter, V... values) {
+        if (values == null || values.length == 0) {
+            return Collections.emptyList();
+        }
+        Class<E> clazz = LambdaHelper.resolveClass(keyGetter);
+        EnumSet<E> enumSet = EnumSet.allOf(clazz);
+        Set<V> valueSet = new HashSet<>(Arrays.asList(values));
+        List<K> keys = new ArrayList<>();
+        for (E e : enumSet) {
+            V value = valueGetter.apply(e);
+            if (value != null && valueSet.contains(value)) {
+                K key = keyGetter.apply(e);
+                if (key != null) {
+                    keys.add(key);
+                }
+            }
+        }
+        return keys;
+    }
+
+    /**
      * 返回键值对map
      *
      * @param keyGetter   获取指定属性的方法引用，如 UserType::getCode
@@ -138,6 +199,54 @@ public class EnumHelper<E extends Enum<E>, K> {
     public <V> V resolveValue(K key, Function<E, V> valueGetter) {
         E e = resolveEnum(key);
         return e == null ? null : valueGetter.apply(e);
+    }
+
+    /**
+     * 批量根据key获取value列表
+     *
+     * @param keys        键列表（可变参数）
+     * @param valueGetter 获取值的 getter
+     * @param <V>         值类型
+     * @return 匹配的value列表
+     */
+    public <V> List<V> resolveValues(Function<E, V> valueGetter, K... keys) {
+        if (keys == null || keys.length == 0) {
+            return Collections.emptyList();
+        }
+        Set<K> keySet = new HashSet<>(Arrays.asList(keys));
+        List<V> values = new ArrayList<>();
+        for (Map.Entry<K, E> entry : keyMap.entrySet()) {
+            if (keySet.contains(entry.getKey())) {
+                V value = valueGetter.apply(entry.getValue());
+                if (value != null) {
+                    values.add(value);
+                }
+            }
+        }
+        return values;
+    }
+
+    /**
+     * 批量根据value获取key列表
+     *
+     * @param valueGetter 获取值的 getter
+     * @param values      值列表（可变参数）
+     * @param <V>         值类型
+     * @return 匹配的key列表
+     */
+    public <V> List<K> resolveKeys(Function<E, V> valueGetter, V... values) {
+        if (values == null || values.length == 0) {
+            return Collections.emptyList();
+        }
+        Set<V> valueSet = new HashSet<>(Arrays.asList(values));
+        List<K> keys = new ArrayList<>();
+        for (Map.Entry<K, E> entry : keyMap.entrySet()) {
+            V value = valueGetter.apply(entry.getValue());
+            if (value != null && valueSet.contains(value)) {
+                keys.add(entry.getKey());
+            }
+        }
+        return keys;
     }
 
     /**

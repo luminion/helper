@@ -1,5 +1,8 @@
 package io.github.luminion.helper.base;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * Bit位操作辅助类，用于权限管理等场景
  *
@@ -65,5 +68,48 @@ public abstract class BitHelper {
     public static boolean hasNoBits(long source, long bitMask) {
         return (source & bitMask) == 0;
     }
-    
+    // ==================== 提取位操作 ====================
+
+    /**
+     * 获取值中所有被设置的位
+     * <p>
+     * 例如：传入7（二进制0111），返回[1, 2, 4]
+     *
+     * @param value 源值（仅处理非负数，负数会被忽略）
+     * @return 所有被设置的位组成的列表，按位权升序排列
+     */
+    public static List<Integer> getSetBits(int value) {
+        if (value == 0) {
+            return new ArrayList<>();
+        }
+        List<Integer> result = new ArrayList<>(Integer.bitCount(value));
+        while (value != 0) {
+            int lowestBit = value & -value;
+            result.add(lowestBit);
+            value ^= lowestBit;
+        }
+        return result;
+    }
+
+    /**
+     * 获取值中所有被设置的位 - long版本
+     * <p>
+     * 例如：传入7L（二进制0111），返回[1, 2, 4]
+     *
+     * @param value 源值（仅处理非负数，负数会被忽略）
+     * @return 所有被设置的位组成的列表，按位权升序排列
+     */
+    public static List<Long> getSetBits(long value) {
+        if (value == 0) {
+            return new ArrayList<>();
+        }
+        List<Long> result = new ArrayList<>(Long.bitCount(value));
+        while (value != 0) {
+            long lowestBit = value & -value;
+            result.add(lowestBit);
+            value ^= lowestBit;
+        }
+        return result;
+    }
+
 }

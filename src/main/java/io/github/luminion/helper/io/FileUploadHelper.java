@@ -3,18 +3,13 @@ package io.github.luminion.helper.io;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.io.FileUtils;
 
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
+import java.nio.file.*;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 
 /**
  * 文件上传帮助程序
@@ -39,11 +34,7 @@ public class FileUploadHelper {
      * @return boolean
      */
     public boolean verifyFileExists(String fileMD5, String fileExt) {
-        // 获取合并后的文件
-        File uploadFile = new File(chunkUploadPath.concat(File.separator).concat(fileMD5).concat(".").concat(fileExt));
-
-        // 验证文件是否已经上传，如果已经上传，返回true，通知客户端秒传成功
-        return uploadFile.exists();
+        return Files.exists(resolveMergePath(fileMD5, fileExt));
     }
 
     /**
@@ -53,20 +44,13 @@ public class FileUploadHelper {
      * @return int
      */
     public int getChunkUploadCount(String fileMD5) {
-        // 获取分片存储目录
-        File uploadChunkDir = new File(chunkUploadPath.concat(File.separator).concat(fileMD5));
-
-        // 验证是否上传过分片，如果目录都不存在，则返回0
+        File uploadChunkDir = resolveChunkDir(fileMD5).toFile();
         if (!uploadChunkDir.exists()) {
             return 0;
         }
 
-        // 获取该目录下的所有分片
         File[] files = uploadChunkDir.listFiles();
-        if (files == null) {
-            return 0;
-        }
-        return files.length;
+        return files == null ? 0 : files.length;
     }
 
     /**
@@ -77,37 +61,37 @@ public class FileUploadHelper {
      * @return 列表 <整数>
      */
     public List<Integer> getChunkUploadIndex(String fileMD5, int fileChunkLength) {
-        // 获取分片存储目录
-        File uploadChunkDir = new File(chunkUploadPath.concat(File.separator).concat(fileMD5));
+        File uploadChunkDir = resolveChunkDir(fileMD5).toFile();
 
         ArrayList<Integer> chunkIndexArray = new ArrayList<>();
-
-        // 验证是否上传过分片，如果目录都不存在，则返回-1
         if (!uploadChunkDir.exists()) {
             chunkIndexArray.add(-1);
             return chunkIndexArray;
         }
 
-        // 获取该目录下的所有分片
         File[] files = uploadChunkDir.listFiles();
-
-        // 获取分片数量
-        int fileLength = files.length;
-
-        // 验证分片文件是否存在
-        if (fileLength == 0) {
+        if (files == null || files.length == 0) {
             chunkIndexArray.add(-1);
             return chunkIndexArray;
         }
 
-        // 如果分片文件存在，则获取分片文件下标(chunk)
         for (File file : files) {
-            // 如果分片大小不一致，则删除该分片，且不返回该分片索引
             if (file.length() != fileChunkLength) {
                 file.delete();
-            } else {
-                chunkIndexArray.add(Integer.valueOf(file.getName().split("\\.")[0]));
+                continue;
             }
+            String[] split = file.getName().split("\\.");
+            if (split.length == 0) {
+                continue;
+            }
+            try {
+                chunkIndexArray.add(Integer.valueOf(split[0]));
+            } catch (NumberFormatException ignore) {
+                log.warn("非法分片文件名: {}", file.getAbsolutePath());
+            }
+        }
+        if (chunkIndexArray.isEmpty()) {
+            chunkIndexArray.add(-1);
         }
         return chunkIndexArray;
     }
@@ -121,19 +105,13 @@ public class FileUploadHelper {
      * @return boolean
      */
     public boolean verifyChunk(String fileMD5, String chunk, int chunkSize) {
-        // 获取上传的分片文件（f:\\{fileMD5}\\{chunk}.part）【part后缀为临时文件后缀】
-        String uploadPath = chunkUploadPath.concat(File.separator).concat(fileMD5).concat(File.separator).concat(chunk).concat(".part");
-        File file = new File(uploadPath);
-
-        // 如果分片文件不存在，则返回false，客户端继续上传【正常来讲这里验证{fileMD5目录是否存在就可以了}】
+        File file = resolveChunkDir(fileMD5).resolve(chunk + ".part").toFile();
         if (!file.exists()) {
             return false;
         }
 
-        // 如果分片存在，验证存在的分片大小是否是要上传的分片的大小。
-        // 如果不是，则证明该分片上次上传到一半就失败了，那么删除该分片，返回false，由客户端重新上传该分片【如果是最后一个分片也可能大小不一样，这个不用考虑】
-        if (file.length() != Integer.valueOf(chunkSize)) {
-            file.delete();// 删除该分片【delete只能删除文件或者空的文件夹】
+        if (file.length() != chunkSize) {
+            file.delete();
             return false;
         }
         return true;
@@ -150,14 +128,14 @@ public class FileUploadHelper {
      */
     @SneakyThrows
     public boolean uploadChunk(InputStream inputStream, String fileMD5, String chunk) {
-        Path chunkDir = Paths.get(chunkUploadPath, fileMD5);
-
+        Path chunkDir = resolveChunkDir(fileMD5);
         if (!Files.exists(chunkDir)) {
             Files.createDirectories(chunkDir);
         }
-        // 使用分片的下标chunk作为临时文件名称【.part后缀为临时文件】
         Path dist = chunkDir.resolve(chunk + ".part");
-        Files.copy(inputStream, dist);
+        try (InputStream actualInputStream = inputStream) {
+            Files.copy(actualInputStream, dist, StandardCopyOption.REPLACE_EXISTING);
+        }
         return true;
     }
 
@@ -171,58 +149,39 @@ public class FileUploadHelper {
      */
     @SneakyThrows
     public boolean mergeFile(String fileMD5, String fileExt, int chunkCount) {
-        // 获取目标文件输出流
-        File outputFile = new File(chunkUploadPath.concat(File.separator).concat(fileMD5).concat(".").concat(fileExt));
+        Path chunkDir = resolveChunkDir(fileMD5);
+        Path outputPath = resolveMergePath(fileMD5, fileExt);
 
-        try (FileOutputStream outputStream = new FileOutputStream(outputFile, true)) {
+        if (!Files.isDirectory(chunkDir)) {
+            return false;
+        }
 
-            // 获取分片文件存储目录
-            String uploadPath = chunkUploadPath.concat(File.separator).concat(fileMD5);
-            File chunkDir = new File(uploadPath);
-            if (!chunkDir.isDirectory()) {
+        File[] files = chunkDir.toFile().listFiles();
+        if (files == null || files.length == 0 || files.length != chunkCount) {
+            return false;
+        }
+
+        for (int i = 0; i < chunkCount; i++) {
+            if (!Files.isRegularFile(chunkDir.resolve(i + ".part"))) {
                 return false;
             }
+        }
 
-            // 获取该目录下的所有分片文件
-            File[] files = chunkDir.listFiles();
-            if (Objects.isNull(files) || files.length == 0) {
-                return false;
+        try (OutputStream outputStream = Files.newOutputStream(outputPath,
+                StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.WRITE)) {
+            for (int i = 0; i < chunkCount; i++) {
+                try (InputStream chunkInputStream = Files.newInputStream(chunkDir.resolve(i + ".part"))) {
+                    copy(chunkInputStream, outputStream);
+                }
             }
-
-            // 验证分片是否已经全部上传完毕
-            if (files.length != Integer.valueOf(chunkCount)) {
-                return false;
-            }
-
-            // 将分片文件合并到目标文件
-            File chunkFile;
-            for (int i = 0; i < files.length; i++) {
-                chunkFile = new File(uploadPath.concat(File.separator).concat(String.valueOf(i)).concat(".part"));
-                FileUtils.copyFile(chunkFile, outputStream);
-            }
-
-            // 清除分片文件【分片文件的清除不要放在合并的循环操作的copyFile后，当copyFile还没执行完可能就执行删除操作了，
-            // 导致某个分片还没合并完成就已经被删除，最终导致合并失败，文件损坏（有可能是因为copyFIle是nio操作）】
-            for (File file : files) {
-                file.delete();
-            }
-
-            // 删除分片目录
-            chunkDir.delete();
-
-            // 清空数组
-            files = null;
-
+            FileHelper.deleteFile(chunkDir.toFile());
             return true;
-
         } catch (Exception e) {
             log.info("分片合并异常:", e);
-            //关闭文件输入流，并删除目标文件，防止合并失败的情况下，下次重传直接秒传成功了
-            outputFile.delete();
+            FileHelper.deleteFile(outputPath.toFile());
             return false;
         }
     }
-
 
     /**
      * 获取合并文件的输出流
@@ -234,8 +193,13 @@ public class FileUploadHelper {
      */
     @SneakyThrows
     public OutputStream getMergeFileOutputStream(String fileMD5, String fileExt, int chunkCount) {
-        Path outputPath = Paths.get(chunkUploadPath, fileMD5 + "." + fileExt);
-        return Files.newOutputStream(outputPath);
+        Path outputPath = resolveMergePath(fileMD5, fileExt);
+        Path parent = outputPath.getParent();
+        if (parent != null && !Files.exists(parent)) {
+            Files.createDirectories(parent);
+        }
+        return Files.newOutputStream(outputPath,
+                StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.WRITE);
     }
 
     /**
@@ -244,19 +208,38 @@ public class FileUploadHelper {
      * @param fileMD5 文件MD5值
      * @return boolean
      */
+    @SneakyThrows
     public boolean cancel(String fileMD5) {
-        // 获取分片存储目录
-        String uploadPath = chunkUploadPath.concat(File.separator).concat(fileMD5);
-        File chunkDir = new File(uploadPath);
-
-        // 获取目录下所有分片文件
-        File[] files = chunkDir.listFiles();
-        for (File file : files) {
-            file.delete();
-        }
-
-        // 删除分片目录
-        chunkDir.delete();
+        Files.delete(resolveChunkDir(fileMD5));
         return true;
+    }
+
+    private Path resolveChunkDir(String fileMD5) {
+        return Paths.get(chunkUploadPath, fileMD5);
+    }
+
+    private Path resolveMergePath(String fileMD5, String fileExt) {
+        String extension = normalizeExtension(fileExt);
+        String filename = extension == null ? fileMD5 : fileMD5 + "." + extension;
+        return Paths.get(chunkUploadPath, filename);
+    }
+
+    private String normalizeExtension(String fileExt) {
+        if (fileExt == null) {
+            return null;
+        }
+        String extension = fileExt.trim();
+        while (extension.startsWith(".")) {
+            extension = extension.substring(1);
+        }
+        return extension.isEmpty() ? null : extension;
+    }
+
+    private void copy(InputStream inputStream, OutputStream outputStream) throws Exception {
+        byte[] buffer = new byte[16 * 1024];
+        int len;
+        while ((len = inputStream.read(buffer)) != -1) {
+            outputStream.write(buffer, 0, len);
+        }
     }
 }

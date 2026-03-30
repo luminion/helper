@@ -61,11 +61,10 @@ public abstract class FileHelper {
                     deleteFile(child);
                 }
             }
-        } else {
-            boolean deleted = target.delete();
-            if (!deleted) {
-                log.warn("文件删除失败：{}", target.getAbsolutePath());
-            }
+        }
+        boolean deleted = target.delete();
+        if (!deleted && target.exists()) {
+            log.warn("文件删除失败：{}", target.getAbsolutePath());
         }
     }
 
@@ -103,7 +102,10 @@ public abstract class FileHelper {
             throw new IllegalArgumentException("目标必须是文件夹");
         }
         if (!destDir.exists()) {
-            destDir.mkdirs();
+            boolean created = destDir.mkdirs();
+            if (!created && !destDir.exists()) {
+                throw new IllegalStateException("目标文件夹创建失败: " + destDir.getAbsolutePath());
+            }
         }
         File[] files = sourceDir.listFiles();
         if (files != null) {

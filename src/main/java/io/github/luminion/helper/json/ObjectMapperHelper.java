@@ -27,6 +27,7 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.TimeZone;
 
 /**
@@ -98,7 +99,7 @@ public class ObjectMapperHelper {
      * @param objectMapper 要使用的 ObjectMapper 实例
      */
     public static void objectMapper(ObjectMapper objectMapper) {
-        instance = ObjectMapperHelper.of(objectMapper);
+        instance = ObjectMapperHelper.of(Objects.requireNonNull(objectMapper, "objectMapper must not be null"));
     }
 
     /**
@@ -117,7 +118,7 @@ public class ObjectMapperHelper {
      * @return 一个 ObjectMapperHelper 实例
      */
     public static ObjectMapperHelper of(ObjectMapper objectMapper){
-        return new ObjectMapperHelper(objectMapper);
+        return new ObjectMapperHelper(Objects.requireNonNull(objectMapper, "objectMapper must not be null"));
     }
 
     public static ObjectMapperHelper of(){
@@ -206,6 +207,26 @@ public class ObjectMapperHelper {
     public <T> List<T> parseArray(String json, Class<T> clazz) {
         return objectMapper.readValue(json, objectMapper.getTypeFactory().constructCollectionType(List.class, clazz));
     }
-    
-    
+
+    /**
+     * 对象转换，常用于 DTO / VO 互转或 Map 转对象。
+     */
+    public <T> T convertValue(Object source, Class<T> clazz) {
+        return objectMapper.convertValue(source, clazz);
+    }
+
+    /**
+     * 对象转换，支持泛型。
+     */
+    public <T> T convertValue(Object source, TypeReference<T> typeReference) {
+        return objectMapper.convertValue(source, typeReference);
+    }
+
+    /**
+     * 更新目标对象已有字段。
+     */
+    @SneakyThrows
+    public <T> T updateValue(T target, Object source) {
+        return objectMapper.updateValue(Objects.requireNonNull(target, "target must not be null"), source);
+    }
 }

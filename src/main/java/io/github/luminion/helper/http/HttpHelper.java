@@ -6,6 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.net.URLEncoder;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.Iterator;
@@ -55,13 +56,16 @@ public class HttpHelper {
         return new HttpHelper(url, "OPTIONS");
     }
 
-    protected static String formatQueryParams(Map<?, ?> args) {
+    protected static String formatQueryParams(Map<?, ?> args, Charset charset) {
         if (args != null && !args.isEmpty()) {
             StringBuilder sb = new StringBuilder();
             Iterator<? extends Map.Entry<?, ?>> it = args.entrySet().iterator();
             while (it.hasNext()) {
                 Map.Entry<?, ?> next = it.next();
-                sb.append(next.getKey()).append("=").append(next.getValue()).append("&");
+                sb.append(urlEncode(next.getKey(), charset))
+                        .append("=")
+                        .append(urlEncode(next.getValue(), charset))
+                        .append("&");
             }
             return sb.substring(0, sb.length() - 1);
         }
@@ -152,17 +156,17 @@ public class HttpHelper {
         // 路径参数
         if (!queryParams.isEmpty()) {
             if (!url.contains("?")) {
-                url += "?" + formatQueryParams(queryParams);
+                url += "?" + formatQueryParams(queryParams, charset);
             } else {
                 if (!url.endsWith("&")) {
                     url += "&";
                 }
-                url += formatQueryParams(queryParams);
+                url += formatQueryParams(queryParams, charset);
             }
         }
         // form参数
         if (!formParams.isEmpty()) {
-            body = formatQueryParams(formParams);
+            body = formatQueryParams(formParams, charset);
         }
         // 通过远程url连接对象打开连接
         connection = (HttpURLConnection) new URL(url).openConnection();
@@ -186,10 +190,11 @@ public class HttpHelper {
             connection.setDoOutput(true);
             try (OutputStream os = connection.getOutputStream()) {
                 // 通过输出流对象将参数写出去/传输出去,它是通过字节数组写出的
-                os.write(body.getBytes());
+                os.write(body.getBytes(charset));
                 // 通过连接对象获取一个输入流，向远程读取
             }
         }
+        responseCode = connection.getResponseCode();
         log.debug("request url:{}, body:{}", url, body);
         return connection;
 
@@ -198,11 +203,15 @@ public class HttpHelper {
     @SneakyThrows
     public InputStream responseStream() {
         HttpURLConnection execute = execute();
-        int code = execute.getResponseCode();
+        int code = responseCode;
         if (code != 200) {
             log.warn("request may execute failed , http code:{},  url:{}, body:{}", code, url, body);
         }
-        return execute.getInputStream();
+        InputStream stream = code >= 400 ? execute.getErrorStream() : execute.getInputStream();
+        if (stream == null) {
+            stream = new ByteArrayInputStream(new byte[0]);
+        }
+        return new DisconnectInputStream(stream, execute);
     }
 
     @SneakyThrows
@@ -222,6 +231,33 @@ public class HttpHelper {
 
     public String responseString() {
         return responseString(charset);
+    }
+
+    private static String urlEncode(Object value, Charset charset) {
+        String text = value == null ? "" : value.toString();
+        try {
+            return URLEncoder.encode(text, charset.name());
+        } catch (UnsupportedEncodingException e) {
+            throw new IllegalStateException("url encode failed", e);
+        }
+    }
+
+    private static class DisconnectInputStream extends FilterInputStream {
+        private final HttpURLConnection connection;
+
+        protected DisconnectInputStream(InputStream inputStream, HttpURLConnection connection) {
+            super(inputStream);
+            this.connection = connection;
+        }
+
+        @Override
+        public void close() throws IOException {
+            try {
+                super.close();
+            } finally {
+                connection.disconnect();
+            }
+        }
     }
 
 }

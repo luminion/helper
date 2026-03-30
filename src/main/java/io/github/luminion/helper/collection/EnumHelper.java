@@ -44,6 +44,16 @@ public class EnumHelper<E extends Enum<E>, K> {
     }
 
     /**
+     * 创建一个枚举助手实例
+     *
+     * @param clazz  枚举类型
+     * @param getter 获取指定属性的方法
+     */
+    public static <E extends Enum<E>, K> EnumHelper<E, K> of(Class<E> clazz, Function<E, K> getter) {
+        return new EnumHelper<E, K>(clazz, getter);
+    }
+
+    /**
      * 根据属性值获取枚举实例
      *
      * @param getter 获取指定属性的方法引用，如 UserType::getCode
@@ -188,6 +198,22 @@ public class EnumHelper<E extends Enum<E>, K> {
         return keyMap.get(key);
     }
 
+    public Optional<E> resolveEnumOptional(K key) {
+        return Optional.ofNullable(resolveEnum(key));
+    }
+
+    public E requireEnum(K key) {
+        E value = resolveEnum(key);
+        if (value == null) {
+            throw new IllegalArgumentException("Enum not found for key: " + key);
+        }
+        return value;
+    }
+
+    public boolean containsKey(K key) {
+        return key != null && keyMap.containsKey(key);
+    }
+
     /**
      * 快捷获取 Value
      *
@@ -265,5 +291,17 @@ public class EnumHelper<E extends Enum<E>, K> {
             }
         }
         return result;
+    }
+
+    public Set<K> keys() {
+        return keyMap.keySet();
+    }
+
+    public List<E> enums() {
+        return new ArrayList<>(keyMap.values());
+    }
+
+    public Map<K, E> keyMap() {
+        return keyMap;
     }
 }

@@ -95,4 +95,18 @@ public abstract class LambdaHelper {
     public static <T, R> String resolvePropertyName(SFunc<T, R> getter) {
         return resolveLambdaInfo(getter).propertyName;
     }
+
+    /**
+     * 获取方法引用对应的原始方法名，例如 getName / isDeleted。
+     */
+    public static <T, R> String resolveMethodName(SFunc<T, R> getter) {
+        return resolveLambdaInfo(getter).serializedLambda.getImplMethodName();
+    }
+
+    /**
+     * 获取底层 SerializedLambda，便于高级场景自行解析。
+     */
+    public static <T, R> SerializedLambda resolveSerializedLambda(SFunc<T, R> getter) {
+        return resolveLambdaInfo(getter).serializedLambda;
+    }
 }

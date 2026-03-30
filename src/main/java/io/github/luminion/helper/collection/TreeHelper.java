@@ -3,7 +3,15 @@ package io.github.luminion.helper.collection;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -23,7 +31,6 @@ public class TreeHelper<T, R> {
     private final Function<T, R> idGetter;
     private final Function<T, R> parentIdGetter;
     private final BiConsumer<T, ? super List<T>> childrenSetter;
-    
 
     /**
      * 创建树助手
@@ -58,18 +65,22 @@ public class TreeHelper<T, R> {
      * @return {@link List } 源列表
      */
     public List<T> buildRelation(Collection<? extends T> elements) {
-        Map<R, List<T>> parentMap = elements.stream()
-                .filter(e -> parentIdGetter.apply(e) != null)
-                .collect(Collectors.groupingBy(parentIdGetter));
+        if (elements == null || elements.isEmpty()) {
+            return Collections.emptyList();
+        }
+        Map<R, List<T>> parentMap = buildParentMap(elements);
 
-        elements.forEach(e -> {
-            R myId = idGetter.apply(e);
+        for (T element : elements) {
+            R myId = idGetter.apply(element);
             List<T> children = parentMap.get(myId);
-            if (children != null) {
-                childrenSetter.accept(e, children);
+            if (children == null) {
+                children = Collections.emptyList();
+            } else {
+                children = new ArrayList<T>(children);
             }
-        });
-        return new ArrayList<>(elements);
+            childrenSetter.accept(element, children);
+        }
+        return new ArrayList<T>(elements);
     }
 
     /**
@@ -80,8 +91,46 @@ public class TreeHelper<T, R> {
      * @return {@link List } 根目录元素
      */
     public List<T> treeRoot(Collection<? extends T> elements, Predicate<? super T> filter) {
-        return buildRelation(elements).stream().filter(filter)
+        if (elements == null || elements.isEmpty()) {
+            return Collections.emptyList();
+        }
+        Predicate<? super T> actualFilter = filter == null ? new Predicate<T>() {
+            @Override
+            public boolean test(T t) {
+                return true;
+            }
+        } : filter;
+        return buildRelation(elements).stream().filter(actualFilter)
                 .collect(Collectors.toList());
+    }
+
+    /**
+     * 根据指定父 id 构建根节点列表。
+     */
+    public List<T> treeRootByParentId(Collection<? extends T> elements, final R parentId) {
+        return treeRoot(elements, new Predicate<T>() {
+            @Override
+            public boolean test(T element) {
+                return Objects.equals(parentIdGetter.apply(element), parentId);
+            }
+        });
+    }
+
+    /**
+     * 自动识别根节点：parentId 为 null 或父节点不存在时视为根节点。
+     */
+    public List<T> treeRootAuto(Collection<? extends T> elements) {
+        if (elements == null || elements.isEmpty()) {
+            return Collections.emptyList();
+        }
+        Set<R> idSet = elements.stream().map(idGetter).collect(Collectors.toSet());
+        return treeRoot(elements, new Predicate<T>() {
+            @Override
+            public boolean test(T element) {
+                R parentId = parentIdGetter.apply(element);
+                return parentId == null || !idSet.contains(parentId);
+            }
+        });
     }
 
     /**
@@ -92,7 +141,9 @@ public class TreeHelper<T, R> {
      * @return 指定id对应节点
      */
     public T treeById(Collection<? extends T> elements, R id) {
-        // 先构建全量关系，再提取
+        if (elements == null || elements.isEmpty()) {
+            return null;
+        }
         buildRelation(elements);
         return elements.stream()
                 .filter(e -> Objects.equals(idGetter.apply(e), id))
@@ -108,7 +159,7 @@ public class TreeHelper<T, R> {
      * @return 节点
      */
     public T treeByNode(Collection<? extends T> elements, T node) {
-        return treeById(elements, idGetter.apply(node));
+        return node == null ? null : treeById(elements, idGetter.apply(node));
     }
 
     /**
@@ -119,6 +170,9 @@ public class TreeHelper<T, R> {
      * @return 直接子元素列表
      */
     public List<T> findDirectChildrenById(Collection<? extends T> elements, R id) {
+        if (elements == null || elements.isEmpty()) {
+            return Collections.emptyList();
+        }
         return elements.stream()
                 .filter(c -> Objects.equals(id, parentIdGetter.apply(c)))
                 .collect(Collectors.toList());
@@ -132,7 +186,7 @@ public class TreeHelper<T, R> {
      * @return 直接子元素列表
      */
     public List<T> findDirectChildrenByNode(Collection<? extends T> elements, T node) {
-        return findDirectChildrenById(elements, idGetter.apply(node));
+        return node == null ? Collections.<T>emptyList() : findDirectChildrenById(elements, idGetter.apply(node));
     }
 
     /**
@@ -143,24 +197,26 @@ public class TreeHelper<T, R> {
      * @return 子元素列表
      */
     public List<T> findAllChildrenById(Collection<? extends T> elements, R id) {
-        // 预处理：构建 ParentID -> Children 索引，复杂度 O(N)
-        Map<R, List<T>> parentMap = elements.stream()
-                .filter(e -> parentIdGetter.apply(e) != null)
-                .collect(Collectors.groupingBy(parentIdGetter));
-
-        List<T> result = new ArrayList<>();
-        Set<R> visited = new HashSet<>();
-        // 初始节点不加入visited，因为它不在结果集中，但如果作为子节点再次出现则需要校验
-        // 不过通常我们关注的是遍历过程中是否遇到已处理过的子节点
-
-        collectChildrenRecursively(parentMap, id, result, visited);
+        if (elements == null || elements.isEmpty()) {
+            return Collections.emptyList();
+        }
+        Map<R, List<T>> parentMap = buildParentMap(elements);
+        List<T> result = new ArrayList<T>();
+        Set<R> visited = new HashSet<R>();
+        if (id != null) {
+            visited.add(id);
+        }
+        collectChildrenRecursively(parentMap, id, result, visited, 0);
         return result;
     }
 
     /**
      * 递归收集子节点（带循环检测）
      */
-    private void collectChildrenRecursively(Map<R, List<T>> parentMap, R currentId, List<T> result, Set<R> visited) {
+    private void collectChildrenRecursively(Map<R, List<T>> parentMap, R currentId, List<T> result, Set<R> visited, int depth) {
+        if (depth >= maxDepth) {
+            return;
+        }
         List<T> children = parentMap.get(currentId);
         if (children == null || children.isEmpty()) {
             return;
@@ -168,15 +224,11 @@ public class TreeHelper<T, R> {
 
         for (T child : children) {
             R childId = idGetter.apply(child);
-            // 如果已经访问过该子节点ID，说明存在循环引用，跳过
-            if (!visited.add(childId)) {
+            if (childId != null && !visited.add(childId)) {
                 continue;
             }
             result.add(child);
-            if (visited.size() > maxDepth) {
-                continue;
-            }
-            collectChildrenRecursively(parentMap, childId, result, visited);
+            collectChildrenRecursively(parentMap, childId, result, visited, depth + 1);
         }
     }
 
@@ -188,7 +240,7 @@ public class TreeHelper<T, R> {
      * @return 子元素列表
      */
     public List<T> findAllChildrenByNode(Collection<? extends T> elements, T node) {
-        return findAllChildrenById(elements, idGetter.apply(node));
+        return node == null ? Collections.emptyList() : findAllChildrenById(elements, idGetter.apply(node));
     }
 
     /**
@@ -199,38 +251,37 @@ public class TreeHelper<T, R> {
      * @return 父元素列表
      */
     public List<T> findAllParentById(Collection<? extends T> elements, R id) {
-        // 预处理：构建 ID -> Node 索引，复杂度 O(N)
+        if (elements == null || elements.isEmpty()) {
+            return Collections.emptyList();
+        }
         Map<R, T> idMap = elements.stream()
-                .collect(Collectors.toMap(idGetter, Function.identity(), (v1, v2) -> v1));
+                .collect(Collectors.toMap(idGetter, Function.identity(), (v1, v2) -> v1, LinkedHashMap::new));
 
         T currentNode = idMap.get(id);
-        List<T> parents = new ArrayList<>();
+        List<T> parents = new ArrayList<T>();
         if (currentNode == null) {
             return parents;
         }
 
-        // 使用Set记录已访问的节点ID，防止循环引用
-        Set<R> visited = new HashSet<>();
+        Set<R> visited = new HashSet<R>();
         visited.add(id);
 
         R parentId = parentIdGetter.apply(currentNode);
         int depth = 0;
 
         while (parentId != null && depth < maxDepth) {
-            // 检测循环引用
             if (visited.contains(parentId)) {
                 break;
             }
             visited.add(parentId);
 
             T parent = idMap.get(parentId);
-            if (parent != null) {
-                parents.add(parent);
-                parentId = parentIdGetter.apply(parent);
-                depth++;
-            } else {
-                break; // 找不到父节点，链条中断
+            if (parent == null) {
+                break;
             }
+            parents.add(parent);
+            parentId = parentIdGetter.apply(parent);
+            depth++;
         }
         return parents;
     }
@@ -243,7 +294,12 @@ public class TreeHelper<T, R> {
      * @return 父元素列表
      */
     public List<T> findAllParentByNode(Collection<? extends T> elements, T node) {
-        return findAllParentById(elements, idGetter.apply(node));
+        return node == null ? Collections.<T>emptyList() : findAllParentById(elements, idGetter.apply(node));
     }
 
+    private Map<R, List<T>> buildParentMap(Collection<? extends T> elements) {
+        return elements.stream()
+                .filter(e -> parentIdGetter.apply(e) != null)
+                .collect(Collectors.groupingBy(parentIdGetter, LinkedHashMap::new, Collectors.mapping(Function.identity(), Collectors.toList())));
+    }
 }

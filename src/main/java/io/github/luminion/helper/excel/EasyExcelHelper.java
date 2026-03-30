@@ -22,6 +22,7 @@ import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 
@@ -39,7 +40,23 @@ public abstract class EasyExcelHelper {
         registerExtraConverters("yyyy-MM-dd", "HH:mm:ss", "yyyy-MM-dd HH:mm:ss");
     }
 
+    public static void registerExtraConverters(String zoneId) {
+        registerExtraConverters("yyyy-MM-dd", "HH:mm:ss", "yyyy-MM-dd HH:mm:ss", zoneId);
+    }
+
     public static void registerExtraConverters(String dateFormat, String timeFormat, String dateTimeFormat) {
+        registerExtraConverters(dateFormat, timeFormat, dateTimeFormat, "GMT+8");
+    }
+
+    public static void registerExtraConverters(String dateFormat, String timeFormat, String dateTimeFormat, String zoneId) {
+        registerConverters(createExtraConverters(dateFormat, timeFormat, dateTimeFormat, zoneId));
+    }
+
+    public static List<Converter<?>> createExtraConverters() {
+        return createExtraConverters("yyyy-MM-dd", "HH:mm:ss", "yyyy-MM-dd HH:mm:ss", "GMT+8");
+    }
+
+    public static List<Converter<?>> createExtraConverters(String dateFormat, String timeFormat, String dateTimeFormat, String zoneId) {
         List<Converter<?>> converters = new ArrayList<>();
 
         converters.add(new BooleanConverter());
@@ -51,7 +68,7 @@ public abstract class EasyExcelHelper {
         converters.add(new BigIntergerConverter());
         converters.add(new BigDecimalConverter());
 
-        converters.add(new DateConverter(dateTimeFormat, "GMT+8"));
+        converters.add(new DateConverter(dateTimeFormat, zoneId));
 
         converters.add(new SqlTimestampConverter(dateTimeFormat));
         converters.add(new SqlDateConverter(dateFormat));
@@ -60,13 +77,15 @@ public abstract class EasyExcelHelper {
         converters.add(new LocalDateTimeConverter(dateTimeFormat));
         converters.add(new LocalDateConverter(dateFormat));
         converters.add(new LocalTimeConverter(timeFormat));
-
-        registerConverters(converters);
+        return Collections.unmodifiableList(converters);
     }
 
 
     @SneakyThrows
     public static void registerConverters(List<Converter<?>> converters) {
+        if (converters == null || converters.isEmpty()) {
+            return;
+        }
         Method putWriteConverter = CONVERTER_LOADER_CLASS.getDeclaredMethod("putWriteConverter", CONVERTER_CLASS);
         putWriteConverter.setAccessible(true);
         Method putAllConverter = CONVERTER_LOADER_CLASS.getDeclaredMethod("putAllConverter", CONVERTER_CLASS);
@@ -98,11 +117,12 @@ public abstract class EasyExcelHelper {
 
         @Override
         public Boolean convertToJavaData(ReadCellData cellData, ExcelContentProperty contentProperty, GlobalConfiguration globalConfiguration) {
-            String cellValue = cellData.getStringValue();
-            if (cellValue == null || cellValue.isEmpty()) {
+            String cellValue = trimToNull(cellData.getStringValue());
+            if (cellValue == null) {
                 return null;
             }
-            return "是".equals(cellValue) || "TRUE".equalsIgnoreCase(cellValue);
+            return "是".equals(cellValue) || "TRUE".equalsIgnoreCase(cellValue) || "Y".equalsIgnoreCase(cellValue)
+                    || "YES".equalsIgnoreCase(cellValue) || "1".equals(cellValue);
         }
 
         @Override
@@ -128,8 +148,8 @@ public abstract class EasyExcelHelper {
 
         @Override
         public Long convertToJavaData(ReadCellData cellData, ExcelContentProperty contentProperty, GlobalConfiguration globalConfiguration) {
-            String cellValue = cellData.getStringValue();
-            if (cellValue == null || cellValue.isEmpty()) {
+            String cellValue = trimToNull(cellData.getStringValue());
+            if (cellValue == null) {
                 return null;
             }
             return Long.parseLong(cellValue);
@@ -159,8 +179,8 @@ public abstract class EasyExcelHelper {
 
         @Override
         public Float convertToJavaData(ReadCellData cellData, ExcelContentProperty contentProperty, GlobalConfiguration globalConfiguration) {
-            String cellValue = cellData.getStringValue();
-            if (cellValue == null || cellValue.isEmpty()) {
+            String cellValue = trimToNull(cellData.getStringValue());
+            if (cellValue == null) {
                 return null;
             }
             return Float.parseFloat(cellValue);
@@ -189,8 +209,8 @@ public abstract class EasyExcelHelper {
 
         @Override
         public Double convertToJavaData(ReadCellData cellData, ExcelContentProperty contentProperty, GlobalConfiguration globalConfiguration) {
-            String cellValue = cellData.getStringValue();
-            if (cellValue == null || cellValue.isEmpty()) {
+            String cellValue = trimToNull(cellData.getStringValue());
+            if (cellValue == null) {
                 return null;
             }
             return Double.parseDouble(cellValue);
@@ -220,8 +240,8 @@ public abstract class EasyExcelHelper {
 
         @Override
         public BigInteger convertToJavaData(ReadCellData cellData, ExcelContentProperty contentProperty, GlobalConfiguration globalConfiguration) {
-            String cellValue = cellData.getStringValue();
-            if (cellValue == null || cellValue.isEmpty()) {
+            String cellValue = trimToNull(cellData.getStringValue());
+            if (cellValue == null) {
                 return null;
             }
             return new BigInteger(cellValue);
@@ -250,8 +270,8 @@ public abstract class EasyExcelHelper {
 
         @Override
         public BigDecimal convertToJavaData(ReadCellData cellData, ExcelContentProperty contentProperty, GlobalConfiguration globalConfiguration) {
-            String cellValue = cellData.getStringValue();
-            if (cellValue == null || cellValue.isEmpty()) {
+            String cellValue = trimToNull(cellData.getStringValue());
+            if (cellValue == null) {
                 return null;
             }
             return new BigDecimal(cellValue);
@@ -288,8 +308,8 @@ public abstract class EasyExcelHelper {
 
         @Override
         public Date convertToJavaData(ReadCellData cellData, ExcelContentProperty contentProperty, GlobalConfiguration globalConfiguration) {
-            String cellValue = cellData.getStringValue();
-            if (cellValue == null || cellValue.isEmpty()) {
+            String cellValue = trimToNull(cellData.getStringValue());
+            if (cellValue == null) {
                 return null;
             }
             return Date.from(LocalDateTime.parse(cellValue, formatter).atZone(zoneId).toInstant());
@@ -324,8 +344,8 @@ public abstract class EasyExcelHelper {
 
         @Override
         public LocalDateTime convertToJavaData(ReadCellData cellData, ExcelContentProperty contentProperty, GlobalConfiguration globalConfiguration) {
-            String cellValue = cellData.getStringValue();
-            if (cellValue == null || cellValue.isEmpty()) {
+            String cellValue = trimToNull(cellData.getStringValue());
+            if (cellValue == null) {
                 return null;
             }
             return LocalDateTime.parse(cellValue, formatter);
@@ -361,8 +381,8 @@ public abstract class EasyExcelHelper {
 
         @Override
         public LocalDate convertToJavaData(ReadCellData cellData, ExcelContentProperty contentProperty, GlobalConfiguration globalConfiguration) {
-            String cellValue = cellData.getStringValue();
-            if (cellValue == null || cellValue.isEmpty()) {
+            String cellValue = trimToNull(cellData.getStringValue());
+            if (cellValue == null) {
                 return null;
             }
             return LocalDate.parse(cellValue, formatter);
@@ -397,8 +417,8 @@ public abstract class EasyExcelHelper {
 
         @Override
         public LocalTime convertToJavaData(ReadCellData cellData, ExcelContentProperty contentProperty, GlobalConfiguration globalConfiguration) {
-            String cellValue = cellData.getStringValue();
-            if (cellValue == null || cellValue.isEmpty()) {
+            String cellValue = trimToNull(cellData.getStringValue());
+            if (cellValue == null) {
                 return null;
             }
             return LocalTime.parse(cellValue, formatter);
@@ -433,8 +453,8 @@ public abstract class EasyExcelHelper {
 
         @Override
         public Timestamp convertToJavaData(ReadCellData cellData, ExcelContentProperty contentProperty, GlobalConfiguration globalConfiguration) {
-            String cellValue = cellData.getStringValue();
-            if (cellValue == null || cellValue.isEmpty()) {
+            String cellValue = trimToNull(cellData.getStringValue());
+            if (cellValue == null) {
                 return null;
             }
             LocalDateTime ldt = LocalDateTime.parse(cellValue, formatter);
@@ -470,8 +490,8 @@ public abstract class EasyExcelHelper {
 
         @Override
         public java.sql.Date convertToJavaData(ReadCellData cellData, ExcelContentProperty contentProperty, GlobalConfiguration globalConfiguration) {
-            String cellValue = cellData.getStringValue();
-            if (cellValue == null || cellValue.isEmpty()) {
+            String cellValue = trimToNull(cellData.getStringValue());
+            if (cellValue == null) {
                 return null;
             }
             return java.sql.Date.valueOf(LocalDate.parse(cellValue, formatter));
@@ -505,8 +525,8 @@ public abstract class EasyExcelHelper {
 
         @Override
         public Time convertToJavaData(ReadCellData cellData, ExcelContentProperty contentProperty, GlobalConfiguration globalConfiguration) {
-            String cellValue = cellData.getStringValue();
-            if (cellValue == null || cellValue.isEmpty()) {
+            String cellValue = trimToNull(cellData.getStringValue());
+            if (cellValue == null) {
                 return null;
             }
             return Time.valueOf(LocalTime.parse(cellValue, formatter));
@@ -522,4 +542,11 @@ public abstract class EasyExcelHelper {
     }
 
 
+    private static String trimToNull(String value) {
+        if (value == null) {
+            return null;
+        }
+        String trimmed = value.trim();
+        return trimmed.isEmpty() ? null : trimmed;
+    }
 }

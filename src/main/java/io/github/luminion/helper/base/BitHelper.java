@@ -68,6 +68,63 @@ public abstract class BitHelper {
     public static boolean hasNoBits(long source, long bitMask) {
         return (source & bitMask) == 0;
     }
+
+    // ==================== 写入位操作 ====================
+
+    public static int setBits(int source, int bitMask) {
+        return source | bitMask;
+    }
+
+    public static long setBits(long source, long bitMask) {
+        return source | bitMask;
+    }
+
+    public static int clearBits(int source, int bitMask) {
+        return source & ~bitMask;
+    }
+
+    public static long clearBits(long source, long bitMask) {
+        return source & ~bitMask;
+    }
+
+    public static int toggleBits(int source, int bitMask) {
+        return source ^ bitMask;
+    }
+
+    public static long toggleBits(long source, long bitMask) {
+        return source ^ bitMask;
+    }
+
+    public static boolean isSingleBit(int bitMask) {
+        return bitMask > 0 && (bitMask & (bitMask - 1)) == 0;
+    }
+
+    public static boolean isSingleBit(long bitMask) {
+        return bitMask > 0 && (bitMask & (bitMask - 1)) == 0;
+    }
+
+    public static int mergeBits(int... bitMasks) {
+        int result = 0;
+        if (bitMasks == null || bitMasks.length == 0) {
+            return result;
+        }
+        for (int bitMask : bitMasks) {
+            result |= bitMask;
+        }
+        return result;
+    }
+
+    public static long mergeBits(long... bitMasks) {
+        long result = 0L;
+        if (bitMasks == null || bitMasks.length == 0) {
+            return result;
+        }
+        for (long bitMask : bitMasks) {
+            result |= bitMask;
+        }
+        return result;
+    }
+
     // ==================== 提取位操作 ====================
 
     /**
@@ -110,6 +167,14 @@ public abstract class BitHelper {
             value ^= lowestBit;
         }
         return result;
+    }
+
+    public static String toBinaryString(int value) {
+        return Integer.toBinaryString(value);
+    }
+
+    public static String toBinaryString(long value) {
+        return Long.toBinaryString(value);
     }
 
 }

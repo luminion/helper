@@ -1,13 +1,14 @@
 package io.github.luminion.helper.io;
 
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -57,6 +58,9 @@ public class FfmpegHelper {
      * @return {@link String } 执行结果
      */
     public String commandStart(List<String> command) {
+        if (command == null || command.isEmpty()) {
+            throw new IllegalArgumentException("command must not be empty");
+        }
         String join = String.join(" ", command);
         log.info("command : {}", join);
         ProcessBuilder builder = new ProcessBuilder();
@@ -77,8 +81,15 @@ public class FfmpegHelper {
                     result.append("\n");
                 }
             }
+            int exitCode = process.waitFor();
+            if (exitCode != 0) {
+                log.warn("command exit code: {}, command: {}", exitCode, join);
+            }
         } catch (IOException e) {
             log.error("execute command error ", e);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new IllegalStateException("execute command interrupted", e);
         } finally {
             if (process != null) {
                 process.destroy();
@@ -93,6 +104,24 @@ public class FfmpegHelper {
             boolean delete = file.delete();
             if (!delete) {
                 throw new RuntimeException("delete existed file failed : " + filePath);
+            }
+        }
+        File parent = file.getParentFile();
+        if (parent != null && !parent.exists()) {
+            boolean mkdirs = parent.mkdirs();
+            if (!mkdirs && !parent.exists()) {
+                throw new IllegalStateException("create parent directory failed: " + parent.getAbsolutePath());
+            }
+        }
+    }
+
+    private void validateInputList(List<String> paths, String name) {
+        if (paths == null || paths.isEmpty()) {
+            throw new IllegalArgumentException(name + " must not be empty");
+        }
+        for (String path : paths) {
+            if (path == null || path.trim().isEmpty()) {
+                throw new IllegalArgumentException(name + " contains blank path");
             }
         }
     }
@@ -257,6 +286,7 @@ public class FfmpegHelper {
      * @param saveFilePath           保存文件路径
      */
     public void mergeVideosUnstable(List<String> videoResourcesPathList, String saveFilePath) {
+        validateInputList(videoResourcesPathList, "videoResourcesPathList");
         removeExisted(saveFilePath);
         // 所有要合并的视频转换为ts格式存到videoList里
         List<String> videoList = new ArrayList<>();
@@ -281,13 +311,11 @@ public class FfmpegHelper {
         List<String> command1 = new ArrayList<>();
         command1.add(ffmpeg);
         command1.add("-i");
-        StringBuilder buffer = new StringBuilder("\"concat:");
+        StringBuilder buffer = new StringBuilder("concat:");
         for (int i = 0; i < videoList.size(); i++) {
             buffer.append(videoList.get(i));
             if (i != videoList.size() - 1) {
                 buffer.append("|");
-            } else {
-                buffer.append("\"");
             }
         }
         command1.add(String.valueOf(buffer));
@@ -304,6 +332,7 @@ public class FfmpegHelper {
      * @param saveFilePath           保存文件路径
      */
     public void mergeVideos(List<String> videoResourcesPathList, String saveFilePath) {
+        validateInputList(videoResourcesPathList, "videoResourcesPathList");
         removeExisted(saveFilePath);
         // 将所有要合并的视频路径写入txt文件
         String txtFileName = UUID.randomUUID() + ".txt";
@@ -343,17 +372,16 @@ public class FfmpegHelper {
      * @param saveFilePath           保存文件路径
      */
     public void mergeAudios(List<String> audioResourcesPathList, String saveFilePath) {
+        validateInputList(audioResourcesPathList, "audioResourcesPathList");
         removeExisted(saveFilePath);
         List<String> command = new ArrayList<>();
         command.add(ffmpeg);
         command.add("-i");
-        StringBuilder buffer = new StringBuilder("\"concat:");
+        StringBuilder buffer = new StringBuilder("concat:");
         for (int i = 0; i < audioResourcesPathList.size(); i++) {
             buffer.append(audioResourcesPathList.get(i));
             if (i != audioResourcesPathList.size() - 1) {
                 buffer.append("|");
-            } else {
-                buffer.append("\"");
             }
         }
         command.add(String.valueOf(buffer));
@@ -495,12 +523,16 @@ public class FfmpegHelper {
         command.add("-vf");
         // 获取视频信息得到原始视频长、宽
         List<String> list = videoAudioInfo(videoAudioResourcesPath);
-        String resolution = list.stream().filter(v -> v.contains("分辨率")).findFirst().get();
-        String sp[] = resolution.split("x");
-        String originalWidth = sp[0].substring(sp[0].indexOf(":") + 1).trim();
-        String originalHeight = sp[1].substring(0, 4).trim();
-        Integer cropStartWidth = Integer.parseInt(originalWidth) - Integer.parseInt(leftDistance);
-        Integer cropStartHeight = Integer.parseInt(originalHeight) - Integer.parseInt(topDistance);
+        String resolution = list.stream().filter(v -> v.contains("分辨率")).findFirst()
+                .orElseThrow(() -> new IllegalStateException("can not parse video resolution"));
+        Matcher matcher = Pattern.compile("(\\d+)x(\\d+)").matcher(resolution);
+        if (!matcher.find()) {
+            throw new IllegalStateException("can not parse video resolution: " + resolution);
+        }
+        int originalWidth = Integer.parseInt(matcher.group(1));
+        int originalHeight = Integer.parseInt(matcher.group(2));
+        Integer cropStartWidth = originalWidth - Integer.parseInt(leftDistance);
+        Integer cropStartHeight = originalHeight - Integer.parseInt(topDistance);
         command.add("crop=" + finallyWidth + ":" + finallyHeight + ":" + cropStartWidth + ":" + cropStartHeight);
         command.add(saveFilePath);
         commandStart(command);
@@ -514,9 +546,16 @@ public class FfmpegHelper {
      * @return 返回xx:xx:xx形式，如：00:07:18
      */
     public String calculationEndTime(LocalTime starTime, LocalTime endTime) {
+        Objects.requireNonNull(starTime, "starTime must not be null");
+        Objects.requireNonNull(endTime, "endTime must not be null");
         long hour = HOURS.between(starTime, endTime);
         long minutes = MINUTES.between(starTime, endTime);
         long seconds = SECONDS.between(starTime, endTime);
+        if (seconds < 0) {
+            seconds += 24 * 60 * 60;
+            minutes = seconds / 60;
+            hour = minutes / 60;
+        }
         minutes = minutes > 59 ? minutes % 60 : minutes;
         String hourStr = hour < 10 ? "0" + hour : String.valueOf(hour);
         String minutesStr = minutes < 10 ? "0" + minutes : String.valueOf(minutes);
@@ -611,7 +650,7 @@ public class FfmpegHelper {
         command.add("-i");
         command.add(audioResourcesPath);
         command.add("-filter_complex");
-        command.add("\"showwavespic=s=1280*240\"");
+        command.add("showwavespic=s=1280x240");
         command.add("-frames:v");
         command.add("1");
         String fileName = audioResourcesPath.substring(audioResourcesPath.lastIndexOf("\\") + 1,
@@ -663,7 +702,7 @@ public class FfmpegHelper {
         command.add("-i");
         command.add(audioResourcesPath2);
         command.add("-filter_complex");
-        command.add("[0:a]volume=1" + number1 + "[a1];[1:a]volume=" + number2
+        command.add("[0:a]volume=" + number1 + "[a1];[1:a]volume=" + number2
                 + "[a2];[a1][a2]amix=inputs=2:duration=longest");
         command.add(saveFilePath);
         commandStart(command);
@@ -686,7 +725,7 @@ public class FfmpegHelper {
         command.add("-i");
         command.add(audioResourcesPath2);
         command.add("-filter_complex");
-        command.add("\"amerge=inputs=2,pan=stereo|c0<c0+c1|c1<c2+c3\"");
+        command.add("amerge=inputs=2,pan=stereo|c0<c0+c1|c1<c2+c3");
         command.add(saveFilePath);
         commandStart(command);
     }

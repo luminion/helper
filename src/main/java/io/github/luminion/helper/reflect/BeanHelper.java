@@ -49,7 +49,11 @@ public abstract class BeanHelper {
     @SneakyThrows
     public static <T> T newInstance(Class<T> clazz) {
         Objects.requireNonNull(clazz, "clazz must not be null");
-        return clazz.getConstructor().newInstance();
+        java.lang.reflect.Constructor<T> constructor = clazz.getDeclaredConstructor();
+        if (!Modifier.isPublic(constructor.getModifiers()) || !Modifier.isPublic(clazz.getModifiers())) {
+            constructor.setAccessible(true);
+        }
+        return constructor.newInstance();
     }
 
     /**
@@ -73,6 +77,13 @@ public abstract class BeanHelper {
      */
     public static <T> T copyProperties(Object source, T target) {
         return copyProperties(source, target, true);
+    }
+
+    public static <T> T copyProperties(Object source, Class<T> clazz) {
+        if (source == null) {
+            return null;
+        }
+        return copyProperties(source, newInstance(clazz));
     }
 
     /**
@@ -115,7 +126,7 @@ public abstract class BeanHelper {
 
             if (readMethod != null && writeMethod != null) {
                 // 读取源值
-                if (!Modifier.isPublic(readMethod.getDeclaringClass().getModifiers())) {
+                if (!Modifier.isPublic(readMethod.getModifiers()) || !Modifier.isPublic(readMethod.getDeclaringClass().getModifiers())) {
                     readMethod.setAccessible(true);
                 }
                 // check if method is accessible logic is handled by setAccessible if needed
@@ -127,7 +138,7 @@ public abstract class BeanHelper {
                 }
 
                 // 写入目标值
-                if (!Modifier.isPublic(writeMethod.getDeclaringClass().getModifiers())) {
+                if (!Modifier.isPublic(writeMethod.getModifiers()) || !Modifier.isPublic(writeMethod.getDeclaringClass().getModifiers())) {
                     writeMethod.setAccessible(true);
                 }
                 writeMethod.invoke(target, value);
@@ -181,7 +192,7 @@ public abstract class BeanHelper {
 
             // 针对map, 只保留既有getter也有setter的方法
             if (readMethod != null && writeMethod != null) {
-                if (!Modifier.isPublic(readMethod.getDeclaringClass().getModifiers())) {
+                if (!Modifier.isPublic(readMethod.getModifiers()) || !Modifier.isPublic(readMethod.getDeclaringClass().getModifiers())) {
                     readMethod.setAccessible(true);
                 }
                 Object value = readMethod.invoke(source);
@@ -208,6 +219,20 @@ public abstract class BeanHelper {
             return null;
         }
         return copyProperties(source, newInstance(clazz));
+    }
+
+    public static <T> List<T> toTargetList(Collection<?> sources, Class<T> clazz) {
+        if (sources == null || sources.isEmpty()) {
+            return Collections.emptyList();
+        }
+        List<T> result = new ArrayList<>(sources.size());
+        for (Object source : sources) {
+            T target = toTarget(source, clazz);
+            if (target != null) {
+                result.add(target);
+            }
+        }
+        return result;
     }
 
     /**
@@ -239,7 +264,7 @@ public abstract class BeanHelper {
                 continue;
             }
 
-            if (!Modifier.isPublic(readMethod.getDeclaringClass().getModifiers())) {
+            if (!Modifier.isPublic(readMethod.getModifiers()) || !Modifier.isPublic(readMethod.getDeclaringClass().getModifiers())) {
                 readMethod.setAccessible(true);
             }
             Object sourceValue = readMethod.invoke(source);
@@ -257,7 +282,7 @@ public abstract class BeanHelper {
                 }
                 Method writeMethod = pd.getWriteMethod();
                 if (writeMethod != null) {
-                    if (!Modifier.isPublic(writeMethod.getDeclaringClass().getModifiers())) {
+                    if (!Modifier.isPublic(writeMethod.getModifiers()) || !Modifier.isPublic(writeMethod.getDeclaringClass().getModifiers())) {
                         writeMethod.setAccessible(true);
                     }
                     writeMethod.invoke(instance, sourceValue);
@@ -285,10 +310,16 @@ public abstract class BeanHelper {
                     "Property '" + propertyName + "' or its getter not found in " + target.getClass().getName());
         }
         Method readMethod = pd.getReadMethod();
-        if (!Modifier.isPublic(readMethod.getDeclaringClass().getModifiers())) {
+        if (!Modifier.isPublic(readMethod.getModifiers()) || !Modifier.isPublic(readMethod.getDeclaringClass().getModifiers())) {
             readMethod.setAccessible(true);
         }
         return readMethod.invoke(target);
+    }
+
+    public static boolean hasProperty(Class<?> clazz, String propertyName) {
+        Objects.requireNonNull(clazz, "clazz must not be null");
+        Objects.requireNonNull(propertyName, "propertyName must not be null");
+        return propertyMap(clazz).containsKey(propertyName);
     }
 
     /**
@@ -309,7 +340,7 @@ public abstract class BeanHelper {
                     "Property '" + propertyName + "' or its setter not found in " + target.getClass().getName());
         }
         Method writeMethod = pd.getWriteMethod();
-        if (!Modifier.isPublic(writeMethod.getDeclaringClass().getModifiers())) {
+        if (!Modifier.isPublic(writeMethod.getModifiers()) || !Modifier.isPublic(writeMethod.getDeclaringClass().getModifiers())) {
             writeMethod.setAccessible(true);
         }
         writeMethod.invoke(target, value);

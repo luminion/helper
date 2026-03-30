@@ -3,9 +3,15 @@ package io.github.luminion.helper.datetime;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 
-import java.time.*;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Date;
+import java.util.Objects;
 
 /**
  * 时间日期助手
@@ -28,7 +34,18 @@ public class DatetimeHelper {
      * @return {@link DatetimeHelper}
      */
     public static DatetimeHelper now() {
-        return new DatetimeHelper(ZonedDateTime.now());
+        return now(ZoneId.systemDefault());
+    }
+
+    public static DatetimeHelper now(ZoneId zoneId) {
+        return new DatetimeHelper(ZonedDateTime.now(requireZoneId(zoneId)));
+    }
+
+    /**
+     * 根据 {@link ZonedDateTime} 创建
+     */
+    public static DatetimeHelper of(ZonedDateTime zonedDateTime) {
+        return new DatetimeHelper(Objects.requireNonNull(zonedDateTime, "zonedDateTime must not be null"));
     }
 
     /**
@@ -38,7 +55,12 @@ public class DatetimeHelper {
      * @return {@link DatetimeHelper}
      */
     public static DatetimeHelper of(LocalDateTime localDateTime) {
-        return new DatetimeHelper(localDateTime.atZone(ZoneId.systemDefault()));
+        return of(localDateTime, ZoneId.systemDefault());
+    }
+
+    public static DatetimeHelper of(LocalDateTime localDateTime, ZoneId zoneId) {
+        Objects.requireNonNull(localDateTime, "localDateTime must not be null");
+        return new DatetimeHelper(localDateTime.atZone(requireZoneId(zoneId)));
     }
 
     /**
@@ -48,7 +70,12 @@ public class DatetimeHelper {
      * @return {@link DatetimeHelper}
      */
     public static DatetimeHelper of(LocalDate localDate) {
-        return new DatetimeHelper(localDate.atStartOfDay(ZoneId.systemDefault()));
+        return of(localDate, ZoneId.systemDefault());
+    }
+
+    public static DatetimeHelper of(LocalDate localDate, ZoneId zoneId) {
+        Objects.requireNonNull(localDate, "localDate must not be null");
+        return new DatetimeHelper(localDate.atStartOfDay(requireZoneId(zoneId)));
     }
 
     /**
@@ -58,7 +85,13 @@ public class DatetimeHelper {
      * @return {@link DatetimeHelper}
      */
     public static DatetimeHelper of(LocalTime localTime) {
-        return new DatetimeHelper(localTime.atDate(LocalDate.now()).atZone(ZoneId.systemDefault()));
+        return of(localTime, LocalDate.now(), ZoneId.systemDefault());
+    }
+
+    public static DatetimeHelper of(LocalTime localTime, LocalDate localDate, ZoneId zoneId) {
+        Objects.requireNonNull(localTime, "localTime must not be null");
+        Objects.requireNonNull(localDate, "localDate must not be null");
+        return new DatetimeHelper(localTime.atDate(localDate).atZone(requireZoneId(zoneId)));
     }
 
     /**
@@ -68,7 +101,17 @@ public class DatetimeHelper {
      * @return {@link DatetimeHelper}
      */
     public static DatetimeHelper of(Date date) {
+        Objects.requireNonNull(date, "date must not be null");
         return new DatetimeHelper(ZonedDateTime.ofInstant(date.toInstant(), ZoneId.systemDefault()));
+    }
+
+    public static DatetimeHelper of(Instant instant) {
+        return of(instant, ZoneId.systemDefault());
+    }
+
+    public static DatetimeHelper of(Instant instant, ZoneId zoneId) {
+        Objects.requireNonNull(instant, "instant must not be null");
+        return new DatetimeHelper(ZonedDateTime.ofInstant(instant, requireZoneId(zoneId)));
     }
 
     /**
@@ -88,7 +131,7 @@ public class DatetimeHelper {
      * @return {@link DatetimeHelper}
      */
     public static DatetimeHelper ofEpochMilli(long epochMilli) {
-        return new DatetimeHelper(ZonedDateTime.ofInstant(new Date(epochMilli).toInstant(), ZoneId.systemDefault()));
+        return new DatetimeHelper(ZonedDateTime.ofInstant(Instant.ofEpochMilli(epochMilli), ZoneId.systemDefault()));
     }
 
     /**
@@ -99,6 +142,43 @@ public class DatetimeHelper {
      */
     public static DatetimeHelper ofEpochDay(long epochDay) {
         return new DatetimeHelper(LocalDate.ofEpochDay(epochDay).atStartOfDay(ZoneId.systemDefault()));
+    }
+
+    public static DatetimeHelper parseDateTime(String text) {
+        return parseDateTime(text, FORMATTER_DATE_TIME_);
+    }
+
+    public static DatetimeHelper parseDateTime(String text, DateTimeFormatter formatter) {
+        Objects.requireNonNull(text, "text must not be null");
+        Objects.requireNonNull(formatter, "formatter must not be null");
+        return of(LocalDateTime.parse(text, formatter));
+    }
+
+    public static DatetimeHelper parseDate(String text) {
+        return parseDate(text, FORMATTER_DATE);
+    }
+
+    public static DatetimeHelper parseDate(String text, DateTimeFormatter formatter) {
+        Objects.requireNonNull(text, "text must not be null");
+        Objects.requireNonNull(formatter, "formatter must not be null");
+        return of(LocalDate.parse(text, formatter));
+    }
+
+    public static DatetimeHelper parseTime(String text) {
+        return parseTime(text, FORMATTER_TIME);
+    }
+
+    public static DatetimeHelper parseTime(String text, DateTimeFormatter formatter) {
+        Objects.requireNonNull(text, "text must not be null");
+        Objects.requireNonNull(formatter, "formatter must not be null");
+        return of(LocalTime.parse(text, formatter));
+    }
+
+    /**
+     * 转为 {@link ZonedDateTime}
+     */
+    public ZonedDateTime toZonedDateTime() {
+        return zonedDateTime;
     }
 
     /**
@@ -128,6 +208,14 @@ public class DatetimeHelper {
         return zonedDateTime.toLocalTime();
     }
 
+    public Instant toInstant() {
+        return zonedDateTime.toInstant();
+    }
+
+    public Date toDate() {
+        return Date.from(toInstant());
+    }
+
     /**
      * 转为纪元秒
      *
@@ -146,6 +234,47 @@ public class DatetimeHelper {
         return zonedDateTime.toInstant().toEpochMilli();
     }
 
+    public DatetimeHelper withZoneSameInstant(ZoneId zoneId) {
+        return new DatetimeHelper(zonedDateTime.withZoneSameInstant(requireZoneId(zoneId)));
+    }
+
+    public DatetimeHelper plusDays(long days) {
+        return new DatetimeHelper(zonedDateTime.plusDays(days));
+    }
+
+    public DatetimeHelper plusHours(long hours) {
+        return new DatetimeHelper(zonedDateTime.plusHours(hours));
+    }
+
+    public DatetimeHelper plusMinutes(long minutes) {
+        return new DatetimeHelper(zonedDateTime.plusMinutes(minutes));
+    }
+
+    public DatetimeHelper minusDays(long days) {
+        return new DatetimeHelper(zonedDateTime.minusDays(days));
+    }
+
+    public DatetimeHelper minusHours(long hours) {
+        return new DatetimeHelper(zonedDateTime.minusHours(hours));
+    }
+
+    public DatetimeHelper minusMinutes(long minutes) {
+        return new DatetimeHelper(zonedDateTime.minusMinutes(minutes));
+    }
+
+    public DatetimeHelper startOfDay() {
+        return new DatetimeHelper(zonedDateTime.toLocalDate().atStartOfDay(zonedDateTime.getZone()));
+    }
+
+    public DatetimeHelper endOfDay() {
+        return new DatetimeHelper(zonedDateTime.toLocalDate().plusDays(1)
+                .atStartOfDay(zonedDateTime.getZone()).minusNanos(1));
+    }
+
+    public String format(DateTimeFormatter formatter) {
+        return zonedDateTime.format(Objects.requireNonNull(formatter, "formatter must not be null"));
+    }
+
     /**
      * 转为字符串
      *
@@ -153,18 +282,30 @@ public class DatetimeHelper {
      */
     @Override
     public String toString() {
-        return toLocalDateTime().format(FORMATTER_DATE_TIME_);
-    }
-    
-    public String toDateTimeString() {
-        return toLocalDateTime().format(FORMATTER_DATE_TIME_);
+        return toDateTimeString();
     }
 
-    public String toTimeString() {
-        return toLocalTime().toString();
+    public String toDateTimeString() {
+        return format(FORMATTER_DATE_TIME_);
+    }
+
+    public String toDateHourMinuteString() {
+        return format(FORMATTER_DATE_HOUR_MINUTE);
     }
 
     public String toDateString() {
-        return toLocalDate().toString();
+        return format(FORMATTER_DATE);
+    }
+
+    public String toTimeString() {
+        return format(FORMATTER_TIME);
+    }
+
+    public String toHourMinuteString() {
+        return format(FORMATTER_HOUR_MINUTE);
+    }
+
+    private static ZoneId requireZoneId(ZoneId zoneId) {
+        return Objects.requireNonNull(zoneId, "zoneId must not be null");
     }
 }

@@ -13,7 +13,6 @@ import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
 
-import java.time.LocalDateTime;
 import java.util.Map;
 
 /**
@@ -25,11 +24,6 @@ import java.util.Map;
 public class SpringContextHelper implements BeanFactoryPostProcessor, ApplicationContextAware {
     private static ConfigurableListableBeanFactory beanFactory;
     private static ApplicationContext applicationContext;
-
-    public static void main(String[] args) {
-        LocalDateTime   localDateTime = LocalDateTime.now().plusSeconds(31102);
-        System.out.println(localDateTime);
-    }
 
     public void postProcessBeanFactory(ConfigurableListableBeanFactory beanFactory) throws BeansException {
         SpringContextHelper.beanFactory = beanFactory;
@@ -44,6 +38,10 @@ public class SpringContextHelper implements BeanFactoryPostProcessor, Applicatio
             throw new IllegalStateException("No ApplicationContext injected, maybe not in the Spring environment?");
         }
         return applicationContext;
+    }
+
+    public static boolean hasApplicationContext() {
+        return applicationContext != null;
     }
 
     public static BeanFactory getBeanFactory() {
@@ -86,6 +84,14 @@ public class SpringContextHelper implements BeanFactoryPostProcessor, Applicatio
         return null == applicationContext ? null : applicationContext.getEnvironment().getProperty(key);
     }
 
+    public static String getProperty(String key, String defaultValue) {
+        return null == applicationContext ? defaultValue : applicationContext.getEnvironment().getProperty(key, defaultValue);
+    }
+
+    public static String getRequiredProperty(String key) {
+        return getEnvironment().getRequiredProperty(key);
+    }
+
     public static String getApplicationName() {
         return getProperty("spring.application.name");
     }
@@ -103,8 +109,32 @@ public class SpringContextHelper implements BeanFactoryPostProcessor, Applicatio
         return (T) getBeanFactory().getBean(clazz);
     }
 
+    public static Object getBean(String name) {
+        return getBeanFactory().getBean(name);
+    }
+
     public static <T> T getBean(String name, Class<T> clazz) {
         return getBeanFactory().getBean(name, clazz);
+    }
+
+    public static boolean containsBean(String name) {
+        return getBeanFactory().containsBean(name);
+    }
+
+    public static <T> T getBeanIfPresent(Class<T> clazz) {
+        try {
+            return getBean(clazz);
+        } catch (BeansException e) {
+            return null;
+        }
+    }
+
+    public static <T> T getBeanIfPresent(String name, Class<T> clazz) {
+        try {
+            return getBean(name, clazz);
+        } catch (BeansException e) {
+            return null;
+        }
     }
 
     public static <T> Map<String, T> getBeansOfType(Class<T> type) {
@@ -117,11 +147,20 @@ public class SpringContextHelper implements BeanFactoryPostProcessor, Applicatio
         factory.registerSingleton(beanName, bean);
     }
 
+    public static <T> void registerOrReplaceBean(String beanName, T bean) {
+        if (containsBean(beanName)) {
+            unregisterBean(beanName);
+        }
+        registerBean(beanName, bean);
+    }
+
     public static void unregisterBean(String beanName) {
         ConfigurableListableBeanFactory factory = getConfigurableBeanFactory();
         if (factory instanceof DefaultSingletonBeanRegistry) {
             DefaultSingletonBeanRegistry registry = (DefaultSingletonBeanRegistry) factory;
-            registry.destroySingleton(beanName);
+            if (registry.containsSingleton(beanName)) {
+                registry.destroySingleton(beanName);
+            }
         } else {
             throw new IllegalStateException("Can not unregister bean, the factory is not a DefaultSingletonBeanRegistry!");
         }

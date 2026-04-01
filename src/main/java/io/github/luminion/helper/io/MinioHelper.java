@@ -1,420 +1,108 @@
 package io.github.luminion.helper.io;
 
-import io.minio.BucketExistsArgs;
-import io.minio.GetObjectArgs;
-import io.minio.MakeBucketArgs;
+import io.github.luminion.helper.storage.minio.MinioStorageClient;
+import io.github.luminion.helper.storage.minio.MinioUploadResult;
 import io.minio.MinioClient;
-import io.minio.ObjectWriteResponse;
-import io.minio.PutObjectArgs;
-import io.minio.RemoveBucketArgs;
-import io.minio.StatObjectArgs;
-import io.minio.StatObjectResponse;
-import lombok.Getter;
-import lombok.Setter;
-import lombok.extern.slf4j.Slf4j;
 
-import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
-import java.net.URLEncoder;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.security.MessageDigest;
 
-@Slf4j
-public class MinioHelper {
-
-    private static final int PART_SIZE = 10 * 1024 * 1024;
-
-    @Setter
-    @Getter
-    protected String defaultBucket = "bucket1";
-    @Getter
-    protected MinioClient minioClient;
-    @Getter
-    protected String endpoint;
-    @Setter
-    @Getter
-    protected String publicEndpoint;
+/**
+ * 兼容旧包路径，建议改用 {@link io.github.luminion.helper.storage.minio.MinioHelper}。
+ *
+ * @author luminion
+ * @deprecated 请使用 {@link io.github.luminion.helper.storage.minio.MinioHelper}
+ */
+@Deprecated
+public class MinioHelper extends MinioStorageClient {
 
     public MinioHelper(MinioClient minioClient) {
-        this.minioClient = minioClient;
-        init();
+        super(minioClient);
     }
 
     public MinioHelper(String endpoint, String accessKey, String secretKey) {
-        this.minioClient = MinioClient.builder().endpoint(endpoint).credentials(accessKey, secretKey).build();
-        this.endpoint = endpoint;
-        init();
+        super(endpoint, accessKey, secretKey);
     }
 
     public MinioHelper(String endpoint, String accessKey, String secretKey, String defaultBucket) {
-        this.minioClient = MinioClient.builder().endpoint(endpoint).credentials(accessKey, secretKey).build();
-        this.endpoint = endpoint;
-        this.defaultBucket = defaultBucket;
-        init();
+        super(endpoint, accessKey, secretKey, defaultBucket);
     }
 
-    private void init() {
-        if (defaultBucket != null && !defaultBucket.isEmpty()) {
-            createBucket(defaultBucket);
-        }
+    public static MinioHelper of(MinioClient minioClient) {
+        return new MinioHelper(minioClient);
     }
 
-    public boolean bucketExists(String bucketName) {
-        try {
-            return minioClient.bucketExists(BucketExistsArgs.builder().bucket(bucketName).build());
-        } catch (Exception e) {
-            log.error("createBucket => bucket error", e);
-        }
-        return false;
+    public static MinioHelper of(String endpoint, String accessKey, String secretKey) {
+        return new MinioHelper(endpoint, accessKey, secretKey);
     }
 
-    public boolean createBucket(String bucketName) {
-        try {
-            boolean b = minioClient.bucketExists(BucketExistsArgs.builder().bucket(bucketName).build());
-            if (!b) {
-                minioClient.makeBucket(MakeBucketArgs.builder().bucket(bucketName).build());
-                return true;
-            }
-        } catch (Exception e) {
-            log.error("createBucket => bucket error", e);
-        }
-        return false;
+    public static MinioHelper of(String endpoint, String accessKey, String secretKey, String defaultBucket) {
+        return new MinioHelper(endpoint, accessKey, secretKey, defaultBucket);
     }
 
-    public boolean removeBucket(String bucketName) {
-        try {
-            minioClient.removeBucket(RemoveBucketArgs.builder().bucket(bucketName).build());
-            return true;
-        } catch (Exception e) {
-            log.error("createBucket => bucket error", e);
-        }
-        return false;
+    /**
+     * @deprecated 请使用 {@link #of(MinioClient)}
+     */
+    @Deprecated
+    public static MinioHelper from(MinioClient minioClient) {
+        return of(minioClient);
     }
 
-    public ObjectWriteResponse upload(String bucketName, String filename, InputStream is) {
-        String actualBucketName = requireBucketName(bucketName);
-        String actualObjectName = normalizeObjectName(filename);
-        try {
-            createBucket(actualBucketName);
-            return minioClient.putObject(
-                    PutObjectArgs.builder()
-                            .bucket(actualBucketName)
-                            .object(actualObjectName)
-                            .stream(is, -1, PART_SIZE)
-                            .build()
-            );
-        } catch (Exception e) {
-            log.error("upload => file error", e);
-        } finally {
-            closeQuietly(is, "upload => close inputStream failed");
-        }
-        return null;
+    /**
+     * @deprecated 请使用 {@link #of(String, String, String)}
+     */
+    @Deprecated
+    public static MinioHelper create(String endpoint, String accessKey, String secretKey) {
+        return of(endpoint, accessKey, secretKey);
     }
 
-    public ObjectWriteResponse upload(String filename, InputStream is) {
-        return upload(requireDefaultBucket(), filename, is);
+    /**
+     * @deprecated 请使用 {@link #of(String, String, String, String)}
+     */
+    @Deprecated
+    public static MinioHelper create(String endpoint, String accessKey, String secretKey, String defaultBucket) {
+        return of(endpoint, accessKey, secretKey, defaultBucket);
     }
 
+    @Override
     public UploadResult uploadAndGetResult(String bucketName, String filename, InputStream is) {
-        ObjectWriteResponse response = upload(bucketName, filename, is);
-        if (response == null) {
-            return null;
-        }
-        String actualBucketName = requireBucketName(bucketName);
-        String actualObjectName = normalizeObjectName(filename);
-        return new UploadResult(actualBucketName, actualObjectName, getObjectUrl(actualBucketName, actualObjectName),
-                response.etag(), response.versionId());
+        return convert(super.uploadAndGetResult(bucketName, filename, is));
     }
 
+    @Override
     public UploadResult uploadAndGetResult(String filename, InputStream is) {
-        return uploadAndGetResult(requireDefaultBucket(), filename, is);
+        return convert(super.uploadAndGetResult(filename, is));
     }
 
+    @Override
     public UploadResult uploadAndGetResult(String bucketName, String filename, InputStream is, String fileExt) {
-        return uploadAndGetResult(bucketName, buildObjectName(filename, fileExt), is);
+        return convert(super.uploadAndGetResult(bucketName, filename, is, fileExt));
     }
 
+    @Override
     public UploadResult uploadAndGetResult(String filename, InputStream is, String fileExt) {
-        return uploadAndGetResult(requireDefaultBucket(), filename, is, fileExt);
+        return convert(super.uploadAndGetResult(filename, is, fileExt));
     }
 
-    public String uploadAndGetObjectName(String bucketName, String filename, InputStream is) {
-        UploadResult result = uploadAndGetResult(bucketName, filename, is);
-        return result == null ? null : result.getObjectName();
-    }
-
-    public String uploadAndGetObjectName(String filename, InputStream is) {
-        return uploadAndGetObjectName(requireDefaultBucket(), filename, is);
-    }
-
-    public String uploadAndGetObjectName(String bucketName, String filename, InputStream is, String fileExt) {
-        UploadResult result = uploadAndGetResult(bucketName, filename, is, fileExt);
-        return result == null ? null : result.getObjectName();
-    }
-
-    public String uploadAndGetObjectName(String filename, InputStream is, String fileExt) {
-        return uploadAndGetObjectName(requireDefaultBucket(), filename, is, fileExt);
-    }
-
-    public String uploadAndGetUrl(String bucketName, String filename, InputStream is) {
-        UploadResult result = uploadAndGetResult(bucketName, filename, is);
-        return result == null ? null : result.getUrl();
-    }
-
-    public String uploadAndGetUrl(String filename, InputStream is) {
-        return uploadAndGetUrl(requireDefaultBucket(), filename, is);
-    }
-
-    public String uploadAndGetUrl(String bucketName, String filename, InputStream is, String fileExt) {
-        UploadResult result = uploadAndGetResult(bucketName, filename, is, fileExt);
-        return result == null ? null : result.getUrl();
-    }
-
-    public String uploadAndGetUrl(String filename, InputStream is, String fileExt) {
-        return uploadAndGetUrl(requireDefaultBucket(), filename, is, fileExt);
-    }
-
+    @Override
     public UploadResult uploadByMd5(String bucketName, InputStream is, String fileExt) {
-        Path tempFile = null;
-        try (InputStream actualInputStream = is) {
-            tempFile = Files.createTempFile("minio-helper-", ".upload");
-            MessageDigest messageDigest = MessageDigest.getInstance("MD5");
-            try (OutputStream outputStream = Files.newOutputStream(tempFile)) {
-                byte[] buffer = new byte[16 * 1024];
-                int len;
-                while ((len = actualInputStream.read(buffer)) != -1) {
-                    messageDigest.update(buffer, 0, len);
-                    outputStream.write(buffer, 0, len);
-                }
-                outputStream.flush();
-            }
-
-            String objectName = toHex(messageDigest.digest()) + buildExtensionSuffix(fileExt);
-            try (InputStream uploadInputStream = Files.newInputStream(tempFile)) {
-                return uploadAndGetResult(bucketName, objectName, uploadInputStream);
-            }
-        } catch (Exception e) {
-            log.error("uploadByMd5 => file error", e);
-        } finally {
-            deleteTempFile(tempFile);
-        }
-        return null;
+        return convert(super.uploadByMd5(bucketName, is, fileExt));
     }
 
+    @Override
     public UploadResult uploadByMd5(InputStream is, String fileExt) {
-        return uploadByMd5(requireDefaultBucket(), is, fileExt);
+        return convert(super.uploadByMd5(is, fileExt));
     }
 
-    public String uploadByMd5AndGetUrl(String bucketName, InputStream is, String fileExt) {
-        UploadResult result = uploadByMd5(bucketName, is, fileExt);
-        return result == null ? null : result.getUrl();
-    }
-
-    public String uploadByMd5AndGetUrl(InputStream is, String fileExt) {
-        return uploadByMd5AndGetUrl(requireDefaultBucket(), is, fileExt);
-    }
-
-    public String uploadByMd5AndGetObjectName(String bucketName, InputStream is, String fileExt) {
-        UploadResult result = uploadByMd5(bucketName, is, fileExt);
-        return result == null ? null : result.getObjectName();
-    }
-
-    public String uploadByMd5AndGetObjectName(InputStream is, String fileExt) {
-        return uploadByMd5AndGetObjectName(requireDefaultBucket(), is, fileExt);
-    }
-
-    public String getObjectUrl(String bucketName, String filename) {
-        String baseUrl = normalizeBaseUrl(publicEndpoint != null && !publicEndpoint.isEmpty() ? publicEndpoint : endpoint);
-        if (baseUrl == null) {
+    private static UploadResult convert(MinioUploadResult result) {
+        if (result == null) {
             return null;
         }
-        return baseUrl + "/" + encodePathSegment(bucketName) + "/" + encodeObjectPath(filename);
+        return new UploadResult(result.getBucketName(), result.getObjectName(), result.getUrl(), result.getEtag(), result.getVersionId());
     }
 
-    public String getObjectUrl(String filename) {
-        return getObjectUrl(requireDefaultBucket(), filename);
-    }
-
-    public boolean fileExists(String bucketName, String filename) {
-        StatObjectResponse statObjectResponse = null;
-        try {
-            statObjectResponse = minioClient
-                    .statObject(StatObjectArgs.builder().bucket(bucketName).object(filename).build());
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-        log.debug("statObjectResponse: {}", statObjectResponse);
-        return statObjectResponse.size() > 0;
-    }
-
-    public boolean fileExists(String filename) {
-        return fileExists(requireDefaultBucket(), filename);
-    }
-
-    public boolean download(String bucketName, String filename, OutputStream os) {
-        try (InputStream is = minioClient.getObject(GetObjectArgs.builder()
-                .bucket(bucketName)
-                .object(filename)
-                .build())) {
-            byte[] buf = new byte[16384];
-            int bytesRead;
-            while ((bytesRead = is.read(buf, 0, buf.length)) >= 0) {
-                os.write(buf, 0, bytesRead);
-            }
-            os.flush();
-            return true;
-        } catch (Exception e) {
-            log.error("download => close inputStream failed", e);
-        } finally {
-            if (os != null) {
-                try {
-                    os.close();
-                } catch (IOException e) {
-                    log.error("download => close outputStream failed", e);
-                }
-            }
-        }
-        return false;
-    }
-
-    public boolean download(String filename, OutputStream os) {
-        return download(requireDefaultBucket(), filename, os);
-    }
-
-    private String requireDefaultBucket() {
-        if (defaultBucket == null || defaultBucket.trim().isEmpty()) {
-            throw new IllegalStateException("defaultBucket is null, please set defaultBucket");
-        }
-        return defaultBucket;
-    }
-
-    private String requireBucketName(String bucketName) {
-        if (bucketName == null || bucketName.trim().isEmpty()) {
-            throw new IllegalArgumentException("bucketName is blank");
-        }
-        return bucketName.trim();
-    }
-
-    private String buildObjectName(String filename, String fileExt) {
-        String actualObjectName = normalizeObjectName(filename);
-        if (hasExtension(actualObjectName) || normalizeExtension(fileExt) == null) {
-            return actualObjectName;
-        }
-        return actualObjectName + buildExtensionSuffix(fileExt);
-    }
-
-    private String normalizeObjectName(String filename) {
-        if (filename == null || filename.trim().isEmpty()) {
-            throw new IllegalArgumentException("filename is blank");
-        }
-        return filename.trim().replace('\\', '/');
-    }
-
-    private boolean hasExtension(String filename) {
-        int slashIndex = Math.max(filename.lastIndexOf('/'), filename.lastIndexOf('\\'));
-        int dotIndex = filename.lastIndexOf('.');
-        return dotIndex > slashIndex && dotIndex < filename.length() - 1;
-    }
-
-    private String normalizeExtension(String fileExt) {
-        if (fileExt == null) {
-            return null;
-        }
-        String extension = fileExt.trim();
-        while (extension.startsWith(".")) {
-            extension = extension.substring(1);
-        }
-        return extension.isEmpty() ? null : extension;
-    }
-
-    private String buildExtensionSuffix(String fileExt) {
-        String extension = normalizeExtension(fileExt);
-        return extension == null ? "" : "." + extension;
-    }
-
-    private String normalizeBaseUrl(String baseUrl) {
-        if (baseUrl == null || baseUrl.trim().isEmpty()) {
-            return null;
-        }
-        String actualBaseUrl = baseUrl.trim();
-        while (actualBaseUrl.endsWith("/")) {
-            actualBaseUrl = actualBaseUrl.substring(0, actualBaseUrl.length() - 1);
-        }
-        return actualBaseUrl;
-    }
-
-    private String encodeObjectPath(String objectName) {
-        String actualObjectName = normalizeObjectName(objectName);
-        String[] segments = actualObjectName.split("/");
-        StringBuilder builder = new StringBuilder();
-        for (int i = 0; i < segments.length; i++) {
-            if (i > 0) {
-                builder.append('/');
-            }
-            builder.append(encodePathSegment(segments[i]));
-        }
-        return builder.toString();
-    }
-
-    private String encodePathSegment(String text) {
-        try {
-            return URLEncoder.encode(text, "UTF-8").replace("+", "%20");
-        } catch (Exception e) {
-            throw new IllegalStateException("encode url segment failed", e);
-        }
-    }
-
-    private String toHex(byte[] bytes) {
-        StringBuilder builder = new StringBuilder(bytes.length * 2);
-        for (byte b : bytes) {
-            builder.append(Character.forDigit((b >> 4) & 0x0F, 16));
-            builder.append(Character.forDigit(b & 0x0F, 16));
-        }
-        return builder.toString();
-    }
-
-    private void deleteTempFile(Path tempFile) {
-        if (tempFile == null) {
-            return;
-        }
-        try {
-            Files.deleteIfExists(tempFile);
-        } catch (IOException e) {
-            log.warn("uploadByMd5 => delete temp file failed, file={}", tempFile, e);
-        }
-    }
-
-    private void closeQuietly(InputStream is, String errorMessage) {
-        if (is == null) {
-            return;
-        }
-        try {
-            is.close();
-        } catch (IOException e) {
-            log.error(errorMessage, e);
-        }
-    }
-
-    @Getter
-    public static class UploadResult {
-        private final String bucketName;
-        private final String objectName;
-        private final String url;
-        private final String etag;
-        private final String versionId;
-
+    public static class UploadResult extends MinioUploadResult {
         public UploadResult(String bucketName, String objectName, String url, String etag, String versionId) {
-            this.bucketName = bucketName;
-            this.objectName = objectName;
-            this.url = url;
-            this.etag = etag;
-            this.versionId = versionId;
-        }
-
-        public String getFilename() {
-            return objectName;
+            super(bucketName, objectName, url, etag, versionId);
         }
     }
 }

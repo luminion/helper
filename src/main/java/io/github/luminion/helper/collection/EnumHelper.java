@@ -1,51 +1,307 @@
 package io.github.luminion.helper.collection;
 
-import io.github.luminion.helper.core.SFunc;
 import io.github.luminion.helper.reflect.LambdaHelper;
+import io.github.luminion.helper.core.SFunc;
 
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.function.Function;
 
 /**
- * 兼容旧包路径，建议改用 {@link io.github.luminion.helper.enums.EnumHelper}。
+ * 枚举助手，方便获取枚举中的key和value
  *
  * @author luminion
- * @deprecated 请使用 {@link io.github.luminion.helper.enums.EnumHelper}
  */
-@Deprecated
-public class EnumHelper<E extends Enum<E>, K> extends io.github.luminion.helper.enums.EnumResolver<E, K> {
+public class EnumHelper<E extends Enum<E>, K> {
+    private final Map<K, E> keyMap;
 
     private EnumHelper(Class<E> clazz, Function<E, K> getter) {
-        super(clazz, getter);
+        EnumSet<E> enumSet = EnumSet.allOf(clazz);
+        Map<K, E> map = new HashMap<>(enumSet.size());
+        for (E e : enumSet) {
+            K key = getter.apply(e);
+            if (key != null) {
+                if (map.containsKey(key)) {
+                    throw new IllegalArgumentException("Duplicate key:[" + key + "] found in enum: " + clazz.getName());
+                }
+                map.put(key, e);
+            }
+        }
+        this.keyMap = Collections.unmodifiableMap(map);
     }
 
+    /**
+     * 创建一个枚举助手实例
+     * <p>
+     *
+     * @param getter 获取指定属性的方法引用，如 UserType::getCode
+     * @param <E>    枚举类型
+     * @param <K>    Key 类型
+     * @return 枚举助手实例
+     */
     public static <E extends Enum<E>, K> EnumHelper<E, K> of(SFunc<E, K> getter) {
         Class<E> clazz = LambdaHelper.resolveClass(getter);
-        return new EnumHelper<E, K>(clazz, getter);
+        return new EnumHelper<>(clazz, getter);
     }
 
+    /**
+     * 创建一个枚举助手实例
+     *
+     * @param clazz  枚举类型
+     * @param getter 获取指定属性的方法
+     */
     public static <E extends Enum<E>, K> EnumHelper<E, K> of(Class<E> clazz, Function<E, K> getter) {
         return new EnumHelper<E, K>(clazz, getter);
     }
 
+    /**
+     * 根据属性值获取枚举实例
+     *
+     * @param getter 获取指定属性的方法引用，如 UserType::getCode
+     * @param key    属性值
+     * @param <E>    枚举类型
+     * @param <K>    属性类型
+     * @return 枚举实例，未找到返回 null
+     */
     public static <E extends Enum<E>, K> E resolveEnum(SFunc<E, K> getter, K key) {
-        return io.github.luminion.helper.enums.EnumHelper.resolveEnum(getter, key);
+        Class<E> clazz = LambdaHelper.resolveClass(getter);
+        EnumSet<E> enumSet = EnumSet.allOf(clazz);
+        for (E e : enumSet) {
+            K apply = getter.apply(e);
+            if (apply != null && apply.equals(key)) {
+                return e;
+            }
+        }
+        return null;
     }
 
-    public static <E extends Enum<E>, K, V> V resolveValue(SFunc<E, K> keyGetter, SFunc<E, V> valueGetter, K key) {
-        return io.github.luminion.helper.enums.EnumHelper.resolveValue(keyGetter, valueGetter, key);
+
+    /**
+     * 根据key获取value
+     *
+     * @param keyGetter   获取指定属性的方法引用，如 UserType::getCode
+     * @param valueGetter 获取指定属性的方法引用，如 UserType::getName
+     * @param k           属性值
+     * @param <E>         枚举类型
+     * @param <K>         键类型
+     * @param <V>         值类型
+     * @return 值，未找到返回 null
+     */
+    public static <E extends Enum<E>, K, V> V resolveValue(SFunc<E, K> keyGetter, SFunc<E, V> valueGetter, K k) {
+        Class<E> clazz = LambdaHelper.resolveClass(keyGetter);
+        EnumSet<E> enumSet = EnumSet.allOf(clazz);
+        for (E e : enumSet) {
+            K apply = keyGetter.apply(e);
+            if (apply != null && apply.equals(k)) {
+                return valueGetter.apply(e);
+            }
+        }
+        return null;
     }
 
+    /**
+     * 批量根据key获取value列表
+     *
+     * @param keyGetter   获取指定属性的方法引用，如 UserType::getCode
+     * @param valueGetter 获取指定属性的方法引用，如 UserType::getName
+     * @param keys        键列表（可变参数）
+     * @param <E>         枚举类型
+     * @param <K>         键类型
+     * @param <V>         值类型
+     * @return 匹配的value列表
+     */
     public static <E extends Enum<E>, K, V> List<V> resolveValues(SFunc<E, K> keyGetter, SFunc<E, V> valueGetter, K... keys) {
-        return io.github.luminion.helper.enums.EnumHelper.resolveValues(keyGetter, valueGetter, keys);
+        if (keys == null || keys.length == 0) {
+            return Collections.emptyList();
+        }
+        Class<E> clazz = LambdaHelper.resolveClass(keyGetter);
+        EnumSet<E> enumSet = EnumSet.allOf(clazz);
+        Set<K> keySet = new HashSet<>(Arrays.asList(keys));
+        List<V> values = new ArrayList<>();
+        for (E e : enumSet) {
+            K key = keyGetter.apply(e);
+            if (key != null && keySet.contains(key)) {
+                V value = valueGetter.apply(e);
+                if (value != null) {
+                    values.add(value);
+                }
+            }
+        }
+        return values;
     }
 
+    /**
+     * 批量根据value获取key列表
+     *
+     * @param keyGetter   获取指定属性的方法引用，如 UserType::getCode
+     * @param valueGetter 获取指定属性的方法引用，如 UserType::getName
+     * @param values      值列表（可变参数）
+     * @param <E>         枚举类型
+     * @param <K>         键类型
+     * @param <V>         值类型
+     * @return 匹配的key列表
+     */
     public static <E extends Enum<E>, K, V> List<K> resolveKeys(SFunc<E, K> keyGetter, SFunc<E, V> valueGetter, V... values) {
-        return io.github.luminion.helper.enums.EnumHelper.resolveKeys(keyGetter, valueGetter, values);
+        if (values == null || values.length == 0) {
+            return Collections.emptyList();
+        }
+        Class<E> clazz = LambdaHelper.resolveClass(keyGetter);
+        EnumSet<E> enumSet = EnumSet.allOf(clazz);
+        Set<V> valueSet = new HashSet<>(Arrays.asList(values));
+        List<K> keys = new ArrayList<>();
+        for (E e : enumSet) {
+            V value = valueGetter.apply(e);
+            if (value != null && valueSet.contains(value)) {
+                K key = keyGetter.apply(e);
+                if (key != null) {
+                    keys.add(key);
+                }
+            }
+        }
+        return keys;
     }
 
+    /**
+     * 返回键值对map
+     *
+     * @param keyGetter   获取指定属性的方法引用，如 UserType::getCode
+     * @param valueGetter 获取指定属性的方法引用，如 UserType::getName
+     * @param <E>         枚举类型
+     * @param <K>         键类型
+     * @param <V>         值类型
+     * @return 映射的Map
+     */
     public static <E extends Enum<E>, K, V> Map<K, V> resolveMap(SFunc<E, K> keyGetter, SFunc<E, V> valueGetter) {
-        return io.github.luminion.helper.enums.EnumHelper.resolveMap(keyGetter, valueGetter);
+        Class<E> clazz = LambdaHelper.resolveClass(keyGetter);
+        EnumSet<E> enumSet = EnumSet.allOf(clazz);
+        LinkedHashMap<K, V> map = new LinkedHashMap<>();
+        for (E e : enumSet) {
+            K k = keyGetter.apply(e);
+            V v = valueGetter.apply(e);
+            if (k != null && v != null) {
+                map.put(k, v);
+            }
+        }
+        return map;
+    }
+
+
+    /**
+     * 根据 key 获取枚举实例 (O(1) 复杂度)
+     *
+     * @param key key
+     * @return 枚举实例，未找到返回 null
+     */
+    public E resolveEnum(K key) {
+        if (key == null) {
+            return null;
+        }
+        return keyMap.get(key);
+    }
+
+    public Optional<E> resolveEnumOptional(K key) {
+        return Optional.ofNullable(resolveEnum(key));
+    }
+
+    public E requireEnum(K key) {
+        E value = resolveEnum(key);
+        if (value == null) {
+            throw new IllegalArgumentException("Enum not found for key: " + key);
+        }
+        return value;
+    }
+
+    public boolean containsKey(K key) {
+        return key != null && keyMap.containsKey(key);
+    }
+
+    /**
+     * 快捷获取 Value
+     *
+     * @param key         key
+     * @param valueGetter 获取值的 getter
+     * @param <V>         值类型
+     * @return 值，未找到返回 null
+     */
+    public <V> V resolveValue(K key, Function<E, V> valueGetter) {
+        E e = resolveEnum(key);
+        return e == null ? null : valueGetter.apply(e);
+    }
+
+    /**
+     * 批量根据key获取value列表
+     *
+     * @param keys        键列表（可变参数）
+     * @param valueGetter 获取值的 getter
+     * @param <V>         值类型
+     * @return 匹配的value列表
+     */
+    public <V> List<V> resolveValues(Function<E, V> valueGetter, K... keys) {
+        if (keys == null || keys.length == 0) {
+            return Collections.emptyList();
+        }
+        Set<K> keySet = new HashSet<>(Arrays.asList(keys));
+        List<V> values = new ArrayList<>();
+        for (Map.Entry<K, E> entry : keyMap.entrySet()) {
+            if (keySet.contains(entry.getKey())) {
+                V value = valueGetter.apply(entry.getValue());
+                if (value != null) {
+                    values.add(value);
+                }
+            }
+        }
+        return values;
+    }
+
+    /**
+     * 批量根据value获取key列表
+     *
+     * @param valueGetter 获取值的 getter
+     * @param values      值列表（可变参数）
+     * @param <V>         值类型
+     * @return 匹配的key列表
+     */
+    public <V> List<K> resolveKeys(Function<E, V> valueGetter, V... values) {
+        if (values == null || values.length == 0) {
+            return Collections.emptyList();
+        }
+        Set<V> valueSet = new HashSet<>(Arrays.asList(values));
+        List<K> keys = new ArrayList<>();
+        for (Map.Entry<K, E> entry : keyMap.entrySet()) {
+            V value = valueGetter.apply(entry.getValue());
+            if (value != null && valueSet.contains(value)) {
+                keys.add(entry.getKey());
+            }
+        }
+        return keys;
+    }
+
+    /**
+     * 获取枚举键值对映射的Map
+     *
+     * @param valueGetter 获取值的 getter
+     * @param <V>         值类型
+     * @return 映射的Map
+     */
+    public <V> Map<K, V> resolveMap(Function<E, V> valueGetter) {
+        Map<K, V> result = new LinkedHashMap<>();
+        for (Map.Entry<K, E> entry : keyMap.entrySet()) {
+            V v = valueGetter.apply(entry.getValue());
+            if (v != null) {
+                result.put(entry.getKey(), v);
+            }
+        }
+        return result;
+    }
+
+    public Set<K> keys() {
+        return keyMap.keySet();
+    }
+
+    public List<E> enums() {
+        return new ArrayList<>(keyMap.values());
+    }
+
+    public Map<K, E> keyMap() {
+        return keyMap;
     }
 }

@@ -1,113 +1,263 @@
 package io.github.luminion.helper.http;
 
+import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
+
+import java.io.*;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.net.URLEncoder;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
- * HTTP 静态入口。
- * <p>
- * 适合快速创建请求对象，或者直接完成简单的 GET/POST/PUT/DELETE 调用。
+ * http请求助手
  *
  * @author luminion
  */
-public abstract class HttpHelper {
-    private HttpHelper() {}
+@Slf4j
+public class HttpHelper {
+    protected String url;
+    protected String method;
+    protected Charset charset = StandardCharsets.UTF_8;
+    protected int connectTimeout = 3000;
+    protected int readTimeout = 10000;
+    protected boolean executed;
+    protected Map<String, String> header = new LinkedHashMap<>();
+    protected Map<String, String> queryParams = new LinkedHashMap<>();
+    protected Map<String, String> formParams = new LinkedHashMap<>();
+    protected String body;
+    protected int responseCode = -1;
 
-    /**
-     * 按 HTTP 方法创建请求对象。
-     */
-    public static HttpRequest request(String method, String url) {
-        return new HttpRequest(url, method);
+    public static HttpHelper get(String url) {
+        return new HttpHelper(url, "GET");
     }
 
-    /**
-     * 创建 GET 请求。
-     */
-    public static HttpRequest get(String url) {
-        return request("GET", url);
+    public static HttpHelper post(String url) {
+        return new HttpHelper(url, "POST");
     }
 
-    /**
-     * 创建 POST 请求。
-     */
-    public static HttpRequest post(String url) {
-        return request("POST", url);
+    public static HttpHelper put(String url) {
+        return new HttpHelper(url, "PUT");
     }
 
-    /**
-     * 创建 PUT 请求。
-     */
-    public static HttpRequest put(String url) {
-        return request("PUT", url);
+    public static HttpHelper delete(String url) {
+        return new HttpHelper(url, "DELETE");
     }
 
-    /**
-     * 创建 DELETE 请求。
-     */
-    public static HttpRequest delete(String url) {
-        return request("DELETE", url);
+    public static HttpHelper head(String url) {
+        return new HttpHelper(url, "HEAD");
     }
 
-    /**
-     * 创建 HEAD 请求。
-     */
-    public static HttpRequest head(String url) {
-        return request("HEAD", url);
+    public static HttpHelper options(String url) {
+        return new HttpHelper(url, "OPTIONS");
     }
 
-    /**
-     * 创建 OPTIONS 请求。
-     */
-    public static HttpRequest options(String url) {
-        return request("OPTIONS", url);
+    protected static String formatQueryParams(Map<?, ?> args, Charset charset) {
+        if (args != null && !args.isEmpty()) {
+            StringBuilder sb = new StringBuilder();
+            Iterator<? extends Map.Entry<?, ?>> it = args.entrySet().iterator();
+            while (it.hasNext()) {
+                Map.Entry<?, ?> next = it.next();
+                sb.append(urlEncode(next.getKey(), charset))
+                        .append("=")
+                        .append(urlEncode(next.getValue(), charset))
+                        .append("&");
+            }
+            return sb.substring(0, sb.length() - 1);
+        }
+        return null;
     }
 
-    /**
-     * 直接发起 GET 请求并返回响应文本。
-     */
-    public static String get(String url, Map<String, String> queryParams) {
-        return get(url).queryParam(queryParams).responseString();
+    protected HttpHelper(String httpUrl, String httpMethod) {
+        this.url = httpUrl;
+        this.method = httpMethod;
     }
 
-    /**
-     * 直接发起 GET 请求并按指定字符集读取响应文本。
-     */
-    public static String get(String url, Map<String, String> queryParams, Charset charset) {
-        return get(url).charset(charset).queryParam(queryParams).responseString();
+    public int getResponseCode() {
+        if (responseCode == -1) {
+            throw new IllegalStateException("connection not open yet");
+        }
+        return responseCode;
     }
 
-    /**
-     * 直接发起表单 POST 请求并返回响应文本。
-     */
-    public static String post(String url, Map<String, String> formParams) {
-        return post(url).formParam(formParams).responseString();
+    public HttpHelper connectTimeout(int timeout) {
+        this.connectTimeout = timeout;
+        return this;
     }
 
-    /**
-     * 直接发起表单 POST 请求并按指定字符集读取响应文本。
-     */
-    public static String post(String url, Map<String, String> formParams, Charset charset) {
-        return post(url).charset(charset).formParam(formParams).responseString();
+    public HttpHelper readTimeout(int timeout) {
+        this.readTimeout = timeout;
+        return this;
     }
 
-    /**
-     * 直接发起原始 body 的 POST 请求。
-     */
-    public static String post(String url, String body) {
-        return post(url).body(body).responseString();
+    public HttpHelper charset(Charset charset) {
+        this.charset = charset;
+        return this;
     }
 
-    /**
-     * 直接发起原始 body 的 PUT 请求。
-     */
-    public static String put(String url, String body) {
-        return put(url).body(body).responseString();
+    public HttpHelper header(String key, String value) {
+        header.put(key, value);
+        return this;
     }
 
-    /**
-     * 直接发起 DELETE 请求并返回响应文本。
-     */
-    public static String delete(String url, Map<String, String> queryParams) {
-        return delete(url).queryParam(queryParams).responseString();
+    public HttpHelper header(Map<String, String> params) {
+        header.putAll(params);
+        return this;
     }
+
+    public HttpHelper queryParam(String key, String value) {
+        queryParams.put(key, value);
+        return this;
+    }
+
+    public HttpHelper queryParam(Map<String, String> params) {
+        queryParams.putAll(params);
+        return this;
+    }
+
+    public HttpHelper formParam(String key, String value) {
+        if (body != null) {
+            throw new IllegalStateException("form and request body cannot be set at the same time");
+        }
+        formParams.put(key, value);
+        return this;
+    }
+
+    public HttpHelper formParam(Map<String, String> params) {
+        if (body != null) {
+            throw new IllegalStateException("form and request body cannot be set at the same time");
+        }
+        formParams.putAll(params);
+        return this;
+    }
+
+    public HttpHelper bodyParam(String json) {
+        if (!formParams.isEmpty()) {
+            throw new IllegalStateException("form and request body cannot be set at the same time");
+        }
+        body = json;
+        return this;
+    }
+
+    @SneakyThrows
+    protected HttpURLConnection execute() {
+        if (executed) {
+            throw new IllegalStateException("request has been executed");
+        } else {
+            executed = true;
+        }
+        HttpURLConnection connection = null;
+
+        String url = this.url;
+        // 路径参数
+        if (!queryParams.isEmpty()) {
+            if (!url.contains("?")) {
+                url += "?" + formatQueryParams(queryParams, charset);
+            } else {
+                if (!url.endsWith("&")) {
+                    url += "&";
+                }
+                url += formatQueryParams(queryParams, charset);
+            }
+        }
+        // form参数
+        if (!formParams.isEmpty()) {
+            body = formatQueryParams(formParams, charset);
+        }
+        // 通过远程url连接对象打开连接
+        connection = (HttpURLConnection) new URL(url).openConnection();
+        // 设置连接请求方式
+        connection.setRequestMethod(method);
+        // 设置连接超时时间, 毫秒
+        connection.setConnectTimeout(connectTimeout);
+        // 设置读取超时时间, 毫秒
+        connection.setReadTimeout(readTimeout);
+
+        // 设置传入参数的格式(Content-Type等):请求参数应该是 name1=value1&name2=value2 的形式。
+        if (header != null && !header.isEmpty()) {
+            for (Map.Entry<?, ?> entry : header.entrySet()) {
+                connection.setRequestProperty(entry.getKey().toString(), entry.getValue().toString());
+            }
+        }
+        // 默认值为：true，当前向远程服务读取数据时，设置为true，该参数可有可无
+        connection.setDoInput(true);
+        if (body != null) {
+            // 默认值为：false，当向远程服务器传送数据/写数据时，需要设置为true
+            connection.setDoOutput(true);
+            try (OutputStream os = connection.getOutputStream()) {
+                // 通过输出流对象将参数写出去/传输出去,它是通过字节数组写出的
+                os.write(body.getBytes(charset));
+                // 通过连接对象获取一个输入流，向远程读取
+            }
+        }
+        responseCode = connection.getResponseCode();
+        log.debug("request url:{}, body:{}", url, body);
+        return connection;
+
+    }
+
+    @SneakyThrows
+    public InputStream responseStream() {
+        HttpURLConnection execute = execute();
+        int code = responseCode;
+        if (code != 200) {
+            log.warn("request may execute failed , http code:{},  url:{}, body:{}", code, url, body);
+        }
+        InputStream stream = code >= 400 ? execute.getErrorStream() : execute.getInputStream();
+        if (stream == null) {
+            stream = new ByteArrayInputStream(new byte[0]);
+        }
+        return new DisconnectInputStream(stream, execute);
+    }
+
+    @SneakyThrows
+    public String responseString(Charset charset) {
+        StringBuilder sb = new StringBuilder();
+        try (InputStream is = responseStream();
+                InputStreamReader isr = new InputStreamReader(is, charset);
+                BufferedReader br = new BufferedReader(isr)) {
+            String temp;
+            while ((temp = br.readLine()) != null) {
+                sb.append(temp);
+                sb.append("\r\n");
+            }
+            return sb.toString();
+        }
+    }
+
+    public String responseString() {
+        return responseString(charset);
+    }
+
+    private static String urlEncode(Object value, Charset charset) {
+        String text = value == null ? "" : value.toString();
+        try {
+            return URLEncoder.encode(text, charset.name());
+        } catch (UnsupportedEncodingException e) {
+            throw new IllegalStateException("url encode failed", e);
+        }
+    }
+
+    private static class DisconnectInputStream extends FilterInputStream {
+        private final HttpURLConnection connection;
+
+        protected DisconnectInputStream(InputStream inputStream, HttpURLConnection connection) {
+            super(inputStream);
+            this.connection = connection;
+        }
+
+        @Override
+        public void close() throws IOException {
+            try {
+                super.close();
+            } finally {
+                connection.disconnect();
+            }
+        }
+    }
+
 }

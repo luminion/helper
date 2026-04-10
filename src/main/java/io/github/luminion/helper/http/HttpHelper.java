@@ -158,7 +158,7 @@ public class HttpHelper {
             if (!url.contains("?")) {
                 url += "?" + formatQueryParams(queryParams, charset);
             } else {
-                if (!url.endsWith("&")) {
+                if (!url.endsWith("?") && !url.endsWith("&")) {
                     url += "&";
                 }
                 url += formatQueryParams(queryParams, charset);

@@ -136,7 +136,7 @@ public abstract class BitHelper {
      * @return 所有被设置的位组成的列表，按位权升序排列
      */
     public static List<Integer> getSetBits(int value) {
-        if (value == 0) {
+        if (value <= 0) {
             return new ArrayList<>();
         }
         List<Integer> result = new ArrayList<>(Integer.bitCount(value));
@@ -157,7 +157,7 @@ public abstract class BitHelper {
      * @return 所有被设置的位组成的列表，按位权升序排列
      */
     public static List<Long> getSetBits(long value) {
-        if (value == 0) {
+        if (value <= 0) {
             return new ArrayList<>();
         }
         List<Long> result = new ArrayList<>(Long.bitCount(value));

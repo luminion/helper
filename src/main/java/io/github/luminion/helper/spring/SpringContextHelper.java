@@ -5,6 +5,7 @@ import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.ListableBeanFactory;
 import org.springframework.beans.factory.config.BeanFactoryPostProcessor;
 import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
+import org.springframework.beans.factory.support.BeanDefinitionRegistry;
 import org.springframework.beans.factory.support.DefaultSingletonBeanRegistry;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
@@ -160,6 +161,12 @@ public class SpringContextHelper implements BeanFactoryPostProcessor, Applicatio
             DefaultSingletonBeanRegistry registry = (DefaultSingletonBeanRegistry) factory;
             if (registry.containsSingleton(beanName)) {
                 registry.destroySingleton(beanName);
+            }
+            if (factory instanceof BeanDefinitionRegistry) {
+                BeanDefinitionRegistry beanDefinitionRegistry = (BeanDefinitionRegistry) factory;
+                if (beanDefinitionRegistry.containsBeanDefinition(beanName)) {
+                    beanDefinitionRegistry.removeBeanDefinition(beanName);
+                }
             }
         } else {
             throw new IllegalStateException("Can not unregister bean, the factory is not a DefaultSingletonBeanRegistry!");

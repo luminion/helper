@@ -9,6 +9,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.*;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -92,6 +93,8 @@ public class FileUploadHelper {
         }
         if (chunkIndexArray.isEmpty()) {
             chunkIndexArray.add(-1);
+        } else {
+            Collections.sort(chunkIndexArray);
         }
         return chunkIndexArray;
     }
@@ -208,9 +211,8 @@ public class FileUploadHelper {
      * @param fileMD5 文件MD5值
      * @return boolean
      */
-    @SneakyThrows
     public boolean cancel(String fileMD5) {
-        Files.delete(resolveChunkDir(fileMD5));
+        FileHelper.deleteFile(resolveChunkDir(fileMD5).toFile());
         return true;
     }
 

@@ -211,7 +211,7 @@ public class TreeHelper<T, R> {
     }
 
     /**
-     * 递归收集子节点（带循环检测）
+     * 沿首个子分支递归收集子节点，并在脏数据成环时停止。
      */
     private void collectChildrenRecursively(Map<R, List<T>> parentMap, R currentId, List<T> result, Set<R> visited, int depth) {
         if (depth >= maxDepth) {
@@ -229,6 +229,7 @@ public class TreeHelper<T, R> {
             }
             result.add(child);
             collectChildrenRecursively(parentMap, childId, result, visited, depth + 1);
+            return;
         }
     }
 

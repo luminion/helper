@@ -22,7 +22,7 @@ class SpringContextHelperTest {
     @Test
     void shouldRegisterAndUnregisterBeans() throws Exception {
         GenericApplicationContext context = new GenericApplicationContext();
-        context.registerBean("managedBean", SampleBean.class, SampleBean::new);
+        context.registerBean("managedBean", SampleBean.class, ()->new SampleBean());
         context.refresh();
 
         SpringContextHelper helper = new SpringContextHelper();

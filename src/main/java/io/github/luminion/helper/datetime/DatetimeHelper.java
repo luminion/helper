@@ -20,7 +20,9 @@ import java.util.Objects;
  */
 @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
 public class DatetimeHelper {
+    @Deprecated
     public static final DateTimeFormatter FORMATTER_DATE_TIME_ = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+    public static final DateTimeFormatter FORMATTER_DATE_TIME = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
     public static final DateTimeFormatter FORMATTER_DATE_HOUR_MINUTE = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
     public static final DateTimeFormatter FORMATTER_DATE_HOUR = DateTimeFormatter.ofPattern("yyyy-MM-dd HH");
     public static final DateTimeFormatter FORMATTER_DATE = DateTimeFormatter.ofPattern("yyyy-MM-dd");
@@ -145,7 +147,7 @@ public class DatetimeHelper {
     }
 
     public static DatetimeHelper parseDateTime(String text) {
-        return parseDateTime(text, FORMATTER_DATE_TIME_);
+        return parseDateTime(text, FORMATTER_DATE_TIME);
     }
 
     public static DatetimeHelper parseDateTime(String text, DateTimeFormatter formatter) {
@@ -286,7 +288,7 @@ public class DatetimeHelper {
     }
 
     public String toDateTimeString() {
-        return format(FORMATTER_DATE_TIME_);
+        return format(FORMATTER_DATE_TIME);
     }
 
     public String toDateHourMinuteString() {

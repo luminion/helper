@@ -74,6 +74,30 @@ public class EnumHelper<E extends Enum<E>, K> {
         return null;
     }
 
+    /**
+     * 判断指定 key 是否存在
+     *
+     * @param keyGetter 获取指定属性的方法引用，如 UserType::getCode
+     * @param key       属性值
+     * @param <E>       枚举类型
+     * @param <K>       属性类型
+     * @return true 存在，false 不存在
+     */
+    public static <E extends Enum<E>, K> boolean containsKey(SFunc<E, K> keyGetter, K key) {
+        if (key == null) {
+            return false;
+        }
+        Class<E> clazz = LambdaHelper.resolveClass(keyGetter);
+        EnumSet<E> enumSet = EnumSet.allOf(clazz);
+        for (E e : enumSet) {
+            K apply = keyGetter.apply(e);
+            if (apply != null && apply.equals(key)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
 
     /**
      * 根据key获取value

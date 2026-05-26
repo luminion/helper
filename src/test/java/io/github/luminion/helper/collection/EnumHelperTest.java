@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Test;
 import java.util.Arrays;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -20,6 +21,8 @@ class EnumHelperTest {
         assertTrue(helper.containsKey(1));
 
         assertEquals(Status.ENABLED, EnumHelper.resolveEnum(Status::getCode, 1));
+        assertTrue(EnumHelper.containsKey(Status::getCode, 1));
+        assertFalse(EnumHelper.containsKey(Status::getCode, 99));
         assertEquals("启用", EnumHelper.resolveValue(Status::getCode, Status::getLabel, 1));
         assertEquals(Arrays.asList(0, 1), EnumHelper.resolveKeys(Status::getCode, Status::getLabel, "禁用", "启用"));
         assertNull(EnumHelper.resolveEnum(Status::getCode, 99));

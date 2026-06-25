@@ -11,6 +11,15 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class GeoHelperTest {
 
     @Test
+    void shouldCreateGeoHelperInstance() {
+        GeoHelper point = GeoHelper.ofWGS84(103.98767, 30.66784);
+        System.out.println(point.toGCJ02());
+        /*
+        103.991169,30.665183
+         */
+    }
+
+    @Test
     void shouldCalculateDistanceAndGeometry() {
         GeoHelper point = GeoHelper.ofWGS84(116.404, 39.915);
         GeoHelper near = GeoHelper.ofWGS84(116.405, 39.9155);

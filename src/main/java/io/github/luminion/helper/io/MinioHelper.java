@@ -3,7 +3,10 @@ package io.github.luminion.helper.io;
 import io.minio.BucketExistsArgs;
 import io.minio.ComposeObjectArgs;
 import io.minio.ComposeSource;
+import io.minio.CopyObjectArgs;
+import io.minio.CopySource;
 import io.minio.GetObjectArgs;
+import io.minio.GetPresignedObjectUrlArgs;
 import io.minio.ListObjectsArgs;
 import io.minio.MakeBucketArgs;
 import io.minio.MinioClient;
@@ -11,10 +14,14 @@ import io.minio.ObjectWriteResponse;
 import io.minio.PutObjectArgs;
 import io.minio.RemoveBucketArgs;
 import io.minio.RemoveObjectArgs;
+import io.minio.RemoveObjectsArgs;
 import io.minio.Result;
 import io.minio.StatObjectArgs;
 import io.minio.StatObjectResponse;
 import io.minio.errors.ErrorResponseException;
+import io.minio.http.Method;
+import io.minio.messages.DeleteError;
+import io.minio.messages.DeleteObject;
 import io.minio.messages.Item;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -22,15 +29,20 @@ import lombok.extern.slf4j.Slf4j;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.net.URLConnection;
 import java.net.URLEncoder;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.MessageDigest;
+import java.time.Duration;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.UUID;
 
 @Slf4j
@@ -42,39 +54,81 @@ public class MinioHelper {
 
     private final MinioClient minioClient;
     private final String endpoint;
-    private final String publicEndpoint;
     private final String bucket;
+    /**
+     * 拼接对象访问 URL 时使用的前缀(已包含 bucket 语义)。
+     * 最终 URL = objectUrlPrefix + "/" + 编码后的 objectName。
+     */
+    private final String objectUrlPrefix;
 
-    private MinioHelper(MinioClient minioClient, String endpoint, String publicEndpoint, String bucket) {
-        if (minioClient == null) {
+    private MinioHelper(Builder builder) {
+        if (builder.minioClient == null) {
             throw new IllegalArgumentException("minioClient is null");
         }
-        this.minioClient = minioClient;
-        this.endpoint = requireText(endpoint, "endpoint");
-        this.publicEndpoint = normalizeOptionalBaseUrl(publicEndpoint);
-        this.bucket = requireBucketName(bucket);
-        ensureBucketExists();
+        this.minioClient = builder.minioClient;
+        this.endpoint = normalizeOptionalBaseUrl(builder.endpoint);
+        this.bucket = requireBucketName(builder.bucket);
+        this.objectUrlPrefix = resolveObjectUrlPrefix(this.endpoint, this.bucket, builder.publicUrl);
     }
 
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    /**
+     * @deprecated 改用 {@link #builder()};该重载保留以兼容旧调用。
+     */
+    @Deprecated
     public static MinioHelper of(String endpoint, String accessKey, String secretKey, String bucket) {
         return of(endpoint, null, accessKey, secretKey, bucket);
     }
 
+    /**
+     * @deprecated 改用 {@link #builder()};{@code publicEndpoint} 现等价于
+     * {@link Builder#publicUrl(String)},但需自行带上 bucket 段(如 {@code https://cdn.xxx.com/bucket})。
+     */
+    @Deprecated
     public static MinioHelper of(String endpoint, String publicEndpoint, String accessKey, String secretKey,
                                  String bucket) {
         MinioClient minioClient = MinioClient.builder()
                 .endpoint(requireText(endpoint, "endpoint"))
                 .credentials(requireText(accessKey, "accessKey"), requireText(secretKey, "secretKey"))
                 .build();
-        return new MinioHelper(minioClient, endpoint, publicEndpoint, bucket);
+        return builder()
+                .client(minioClient)
+                .endpoint(endpoint)
+                .publicUrl(legacyPublicUrl(publicEndpoint, bucket))
+                .bucket(bucket)
+                .build();
     }
 
+    /**
+     * @deprecated 改用 {@link #builder()}。
+     */
+    @Deprecated
     public static MinioHelper of(MinioClient minioClient, String endpoint, String bucket) {
-        return new MinioHelper(minioClient, endpoint, null, bucket);
+        return builder().client(minioClient).endpoint(endpoint).bucket(bucket).build();
     }
 
+    /**
+     * @deprecated 改用 {@link #builder()};{@code publicEndpoint} 需自行带上 bucket 段。
+     */
+    @Deprecated
     public static MinioHelper of(MinioClient minioClient, String endpoint, String publicEndpoint, String bucket) {
-        return new MinioHelper(minioClient, endpoint, publicEndpoint, bucket);
+        return builder()
+                .client(minioClient)
+                .endpoint(endpoint)
+                .publicUrl(legacyPublicUrl(publicEndpoint, bucket))
+                .bucket(bucket)
+                .build();
+    }
+
+    private static String legacyPublicUrl(String publicEndpoint, String bucket) {
+        String base = normalizeOptionalBaseUrl(publicEndpoint);
+        if (base == null) {
+            return null;
+        }
+        return base + "/" + encodePathSegment(requireBucketName(bucket));
     }
 
     public boolean bucketExists() {
@@ -100,6 +154,16 @@ public class MinioHelper {
 
     public UploadResult upload(String objectName, InputStream inputStream, String fileExt) {
         return uploadInternal(buildObjectName(objectName, fileExt), requireInputStream(inputStream));
+    }
+
+    /**
+     * 指定 Content-Type 上传(浏览器内联预览需要,如 image/png、application/pdf)。
+     * {@code contentType} 为空时按对象名后缀自动推断。
+     */
+    public UploadResult upload(String objectName, InputStream inputStream, long size, String contentType) {
+        String actualObjectName = normalizeObjectName(objectName);
+        return uploadInternal(actualObjectName, requireInputStream(inputStream), size,
+                resolveContentType(contentType, actualObjectName));
     }
 
     public String uploadAndGetUrl(String objectName, InputStream inputStream) {
@@ -141,7 +205,52 @@ public class MinioHelper {
     }
 
     public String getObjectUrl(String objectName) {
-        return resolveBaseUrl() + "/" + encodePathSegment(bucket) + "/" + encodeObjectPath(objectName);
+        return objectUrlPrefix + "/" + encodeObjectPath(objectName);
+    }
+
+    /**
+     * 生成带签名的临时访问 URL(私有桶取链的正确方式,OSS/S3 默认私有桶请用此方法)。
+     *
+     * @param objectName 对象名
+     * @param expiry     有效期,最长 7 天
+     * @return 预签名 URL
+     */
+    public String presignedUrl(String objectName, Duration expiry) {
+        return presignedUrl(objectName, expiry, Method.GET);
+    }
+
+    /**
+     * 生成预签名上传 URL,前端可直接 PUT 文件到对象存储,不经过应用服务器。
+     *
+     * @param objectName 对象名
+     * @param expiry     有效期,最长 7 天
+     * @return 预签名 PUT URL
+     */
+    public String presignedUploadUrl(String objectName, Duration expiry) {
+        return presignedUrl(objectName, expiry, Method.PUT);
+    }
+
+    private String presignedUrl(String objectName, Duration expiry, Method method) {
+        int seconds = toExpirySeconds(expiry);
+        return call("get presigned url", () -> minioClient.getPresignedObjectUrl(
+                GetPresignedObjectUrlArgs.builder()
+                        .method(method)
+                        .bucket(bucket)
+                        .object(normalizeObjectName(objectName))
+                        .expiry(seconds)
+                        .build()
+        ));
+    }
+
+    private static int toExpirySeconds(Duration expiry) {
+        if (expiry == null || expiry.isZero() || expiry.isNegative()) {
+            throw new IllegalArgumentException("expiry must be positive");
+        }
+        long seconds = expiry.getSeconds();
+        if (seconds > 7 * 24 * 60 * 60L) {
+            throw new IllegalArgumentException("expiry must be <= 7 days");
+        }
+        return (int) seconds;
     }
 
     public boolean fileExists(String objectName) {
@@ -177,6 +286,95 @@ public class MinioHelper {
         } catch (Exception e) {
             throw new IllegalStateException("download failed", e);
         }
+    }
+
+    /**
+     * 删除单个对象。对象不存在时不报错(幂等)。
+     */
+    public void delete(String objectName) {
+        run("delete object", () -> minioClient.removeObject(
+                RemoveObjectArgs.builder().bucket(bucket).object(normalizeObjectName(objectName)).build()
+        ));
+    }
+
+    /**
+     * 批量删除对象。
+     *
+     * @param objectNames 待删除对象名
+     * @return 删除失败的对象名(全部成功则为空列表)
+     */
+    public List<String> delete(List<String> objectNames) {
+        if (objectNames == null || objectNames.isEmpty()) {
+            return Collections.emptyList();
+        }
+        List<DeleteObject> targets = new ArrayList<>(objectNames.size());
+        for (String objectName : objectNames) {
+            targets.add(new DeleteObject(normalizeObjectName(objectName)));
+        }
+        List<String> failed = new ArrayList<>();
+        Iterable<Result<DeleteError>> results = minioClient.removeObjects(
+                RemoveObjectsArgs.builder().bucket(bucket).objects(targets).build()
+        );
+        for (Result<DeleteError> result : results) {
+            try {
+                DeleteError error = result.get();
+                failed.add(error.objectName());
+                log.warn("delete object failed, objectName={}, code={}, message={}",
+                        error.objectName(), error.code(), error.message());
+            } catch (Exception e) {
+                throw new IllegalStateException("batch delete failed", e);
+            }
+        }
+        return failed;
+    }
+
+    /**
+     * 获取对象元信息(size / contentType / lastModified 等)。对象不存在抛 {@link IllegalStateException}。
+     */
+    public ObjectStat stat(String objectName) {
+        StatObjectResponse response = call("stat object", () -> minioClient.statObject(
+                StatObjectArgs.builder().bucket(bucket).object(normalizeObjectName(objectName)).build()
+        ));
+        return new ObjectStat(response.object(), response.size(), response.etag(),
+                response.contentType(), response.lastModified(), response.userMetadata());
+    }
+
+    /**
+     * 列出指定前缀下的所有对象名(递归)。{@code prefix} 为空则列出整个桶。
+     */
+    public List<String> listObjects(String prefix) {
+        ListObjectsArgs.Builder argsBuilder = ListObjectsArgs.builder().bucket(bucket).recursive(true);
+        if (prefix != null && !prefix.trim().isEmpty()) {
+            argsBuilder.prefix(prefix.trim());
+        }
+        List<String> names = new LinkedList<>();
+        Iterable<Result<Item>> results = minioClient.listObjects(argsBuilder.build());
+        for (Result<Item> result : results) {
+            try {
+                names.add(result.get().objectName());
+            } catch (Exception e) {
+                throw new IllegalStateException("list objects failed", e);
+            }
+        }
+        return new ArrayList<>(names);
+    }
+
+    /**
+     * 在同一桶内复制对象。
+     */
+    public UploadResult copy(String sourceObjectName, String targetObjectName) {
+        String target = normalizeObjectName(targetObjectName);
+        ObjectWriteResponse response = call("copy object", () -> minioClient.copyObject(
+                CopyObjectArgs.builder()
+                        .bucket(bucket)
+                        .object(target)
+                        .source(CopySource.builder()
+                                .bucket(bucket)
+                                .object(normalizeObjectName(sourceObjectName))
+                                .build())
+                        .build()
+        ));
+        return toUploadResult(target, response);
     }
 
     public ChunkUploadSession initChunkUpload(String objectName) {
@@ -237,14 +435,20 @@ public class MinioHelper {
     }
 
     private UploadResult uploadInternal(String objectName, InputStream inputStream) {
+        return uploadInternal(objectName, inputStream, -1, resolveContentType(null, objectName));
+    }
+
+    private UploadResult uploadInternal(String objectName, InputStream inputStream, long size, String contentType) {
         try (InputStream actualInputStream = inputStream) {
-            ObjectWriteResponse response = call("upload object", () -> minioClient.putObject(
-                    PutObjectArgs.builder()
-                            .bucket(bucket)
-                            .object(objectName)
-                            .stream(actualInputStream, -1, PART_SIZE)
-                            .build()
-            ));
+            PutObjectArgs.Builder argsBuilder = PutObjectArgs.builder()
+                    .bucket(bucket)
+                    .object(objectName)
+                    .stream(actualInputStream, size, size > 0 ? -1 : PART_SIZE);
+            if (contentType != null) {
+                argsBuilder.contentType(contentType);
+            }
+            PutObjectArgs args = argsBuilder.build();
+            ObjectWriteResponse response = call("upload object", () -> minioClient.putObject(args));
             return toUploadResult(objectName, response);
         } catch (IOException e) {
             throw new IllegalStateException("close inputStream failed", e);
@@ -402,8 +606,22 @@ public class MinioHelper {
         return extension == null ? "" : "." + extension;
     }
 
-    private String resolveBaseUrl() {
-        return publicEndpoint != null ? publicEndpoint : normalizeBaseUrl(endpoint);
+    private static String resolveContentType(String contentType, String objectName) {
+        if (contentType != null && !contentType.trim().isEmpty()) {
+            return contentType.trim();
+        }
+        return URLConnection.guessContentTypeFromName(objectName);
+    }
+
+    private static String resolveObjectUrlPrefix(String endpoint, String bucket, String publicUrl) {
+        String normalizedPublicUrl = normalizeOptionalBaseUrl(publicUrl);
+        if (normalizedPublicUrl != null) {
+            return normalizedPublicUrl;
+        }
+        if (endpoint == null) {
+            throw new IllegalArgumentException("either endpoint or publicUrl must be provided");
+        }
+        return endpoint + "/" + encodePathSegment(bucket);
     }
 
     private static String normalizeBaseUrl(String baseUrl) {
@@ -433,7 +651,7 @@ public class MinioHelper {
         return builder.toString();
     }
 
-    private String encodePathSegment(String text) {
+    private static String encodePathSegment(String text) {
         try {
             return URLEncoder.encode(text, "UTF-8").replace("+", "%20");
         } catch (Exception e) {
@@ -509,6 +727,26 @@ public class MinioHelper {
     }
 
     @Getter
+    public static class ObjectStat {
+        private final String objectName;
+        private final long size;
+        private final String etag;
+        private final String contentType;
+        private final ZonedDateTime lastModified;
+        private final Map<String, String> userMetadata;
+
+        public ObjectStat(String objectName, long size, String etag, String contentType,
+                          ZonedDateTime lastModified, Map<String, String> userMetadata) {
+            this.objectName = objectName;
+            this.size = size;
+            this.etag = etag;
+            this.contentType = contentType;
+            this.lastModified = lastModified;
+            this.userMetadata = userMetadata;
+        }
+    }
+
+    @Getter
     public static class ChunkUploadSession {
         private final String uploadId;
         private final String objectName;
@@ -539,5 +777,66 @@ public class MinioHelper {
     @FunctionalInterface
     private interface ThrowingSupplier<T> {
         T get() throws Exception;
+    }
+
+    public static class Builder {
+        private MinioClient minioClient;
+        private String endpoint;
+        private String accessKey;
+        private String secretKey;
+        private String bucket;
+        private String publicUrl;
+
+        /**
+         * 直接复用已有的 MinioClient(Spring 项目推荐)。设置后将忽略 credentials。
+         */
+        public Builder client(MinioClient minioClient) {
+            this.minioClient = minioClient;
+            return this;
+        }
+
+        /**
+         * MinIO/OSS 服务端地址。未设置 {@link #publicUrl(String)} 时,
+         * 访问 URL 会回退为 path-style:{@code endpoint/bucket/object}。
+         */
+        public Builder endpoint(String endpoint) {
+            this.endpoint = endpoint;
+            return this;
+        }
+
+        public Builder credentials(String accessKey, String secretKey) {
+            this.accessKey = accessKey;
+            this.secretKey = secretKey;
+            return this;
+        }
+
+        public Builder bucket(String bucket) {
+            this.bucket = bucket;
+            return this;
+        }
+
+        /**
+         * 对象访问 URL 前缀(需包含 bucket 语义),用于兼容各种部署形态:
+         * <pre>
+         * MinIO path-style :  http://host:9000/bucket
+         * OSS virtual-host :  https://bucket.oss-cn-hangzhou.aliyuncs.com
+         * 自定义域名/CDN    :  https://cdn.xxx.com
+         * </pre>
+         * 不设置则回退到 {@code endpoint/bucket} 的 path-style。
+         */
+        public Builder publicUrl(String publicUrl) {
+            this.publicUrl = publicUrl;
+            return this;
+        }
+
+        public MinioHelper build() {
+            if (minioClient == null) {
+                minioClient = MinioClient.builder()
+                        .endpoint(requireText(endpoint, "endpoint"))
+                        .credentials(requireText(accessKey, "accessKey"), requireText(secretKey, "secretKey"))
+                        .build();
+            }
+            return new MinioHelper(this);
+        }
     }
 }

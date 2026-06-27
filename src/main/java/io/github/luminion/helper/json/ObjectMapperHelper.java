@@ -35,7 +35,7 @@ import java.util.TimeZone;
  */
 @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
 public class ObjectMapperHelper {
-    private static ObjectMapperHelper instance;
+    private static volatile ObjectMapperHelper instance;
     @Getter
     private final ObjectMapper objectMapper;
 

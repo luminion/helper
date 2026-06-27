@@ -176,10 +176,21 @@ public abstract class BeanHelper {
     @SuppressWarnings("unchecked")
     private static Map<String, Object> objectToMap(Object source, boolean ignoreNull) {
         if (source == null) {
-            return null;
+            return Collections.emptyMap();
         }
         if (source instanceof Map) {
-            return (Map<String, Object>) source;
+            Map<String, Object> sourceMap = (Map<String, Object>) source;
+            if (!ignoreNull) {
+                return new LinkedHashMap<>(sourceMap);
+            }
+            // 过滤 null 值
+            Map<String, Object> result = new LinkedHashMap<>();
+            for (Map.Entry<String, Object> entry : sourceMap.entrySet()) {
+                if (entry.getValue() != null) {
+                    result.put(entry.getKey(), entry.getValue());
+                }
+            }
+            return result;
         }
 
         Map<String, Object> map = new LinkedHashMap<>();

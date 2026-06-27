@@ -190,11 +190,11 @@ public class TreeHelper<T, R> {
     }
 
     /**
-     * 检索指定id对应的所有子节点（递归）
+     * 检索指定id对应的所有子节点（递归，深度优先前序遍历，包含所有层级的后代）
      *
      * @param elements 元素
      * @param id       id
-     * @return 子元素列表
+     * @return 所有后代元素列表
      */
     public List<T> findAllChildrenById(Collection<? extends T> elements, R id) {
         if (elements == null || elements.isEmpty()) {
@@ -211,7 +211,7 @@ public class TreeHelper<T, R> {
     }
 
     /**
-     * 沿首个子分支递归收集子节点，并在脏数据成环时停止。
+     * 沿所有子分支递归收集子节点（深度优先，前序），并在脏数据成环或超过最大深度时停止。
      */
     private void collectChildrenRecursively(Map<R, List<T>> parentMap, R currentId, List<T> result, Set<R> visited, int depth) {
         if (depth >= maxDepth) {
@@ -229,7 +229,6 @@ public class TreeHelper<T, R> {
             }
             result.add(child);
             collectChildrenRecursively(parentMap, childId, result, visited, depth + 1);
-            return;
         }
     }
 

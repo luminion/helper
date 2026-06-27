@@ -97,6 +97,16 @@ public class GeoHelper {
         );
     }
 
+    /**
+     * GCJ-02 坐标转 WGS-84 坐标。
+     * <p>
+     * <strong>精度限制：</strong>GCJ-02（火星坐标系）的加密算法不可逆，本方法采用单次近似逆变换实现，
+     * 存在约 1～2 米的误差。对于导航、地图展示等场景足够使用；若需更高精度，请使用迭代逼近算法。
+     *
+     * @param longitude GCJ-02 经度
+     * @param latitude  GCJ-02 纬度
+     * @return WGS-84 坐标点
+     */
     public static GeoHelper gcj02ToWgs84(double longitude, double latitude) {
         validateCoordinate(longitude, latitude);
         if (isOutOfChina(longitude, latitude)) {
@@ -221,6 +231,14 @@ public class GeoHelper {
                 && current.latitude <= Math.max(wgs84Point1.latitude, wgs84Point2.latitude);
     }
 
+    /**
+     * 转换为 WGS-84 坐标系。
+     * <p>
+     * <strong>精度限制：</strong>若源坐标系为 GCJ-02 或 BD09，转换涉及不可逆的近似逆变换，
+     * 存在约 1～2 米误差（BD09 经 GCJ-02 中转会叠加误差）。详见 {@link #gcj02ToWgs84(double, double)}。
+     *
+     * @return WGS-84 坐标点
+     */
     public GeoHelper toWGS84() {
         if (coordinateSystem == CoordinateSystem.WGS84) {
             return this;

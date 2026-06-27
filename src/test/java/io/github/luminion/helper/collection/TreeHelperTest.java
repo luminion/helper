@@ -28,7 +28,7 @@ class TreeHelperTest {
         assertEquals(1, roots.size());
         assertEquals(2, root.getChildren().size());
         assertEquals(Arrays.asList(nodes.get(1), nodes.get(2)), helper.findDirectChildrenById(nodes, 1));
-        assertEquals(Arrays.asList(nodes.get(1), nodes.get(3)), helper.findAllChildrenById(nodes, 1));
+        assertEquals(Arrays.asList(nodes.get(1), nodes.get(3), nodes.get(2)), helper.findAllChildrenById(nodes, 1));
         assertEquals(Arrays.asList(nodes.get(1), nodes.get(0)), helper.findAllParentById(nodes, 4));
     }
 
@@ -45,6 +45,27 @@ class TreeHelperTest {
         assertEquals(1, children.size());
         assertEquals(Integer.valueOf(2), children.get(0).getId());
         assertNotNull(helper.treeById(nodes, 1));
+    }
+
+    @Test
+    void shouldCollectAllDescendantsAcrossBranches() {
+        // 1 -> [2, 3], 2 -> [4, 5], 3 -> [6]
+        List<Node> nodes = Arrays.asList(
+                new Node(1, null),
+                new Node(2, 1),
+                new Node(3, 1),
+                new Node(4, 2),
+                new Node(5, 2),
+                new Node(6, 3)
+        );
+        TreeHelper<Node, Integer> helper = TreeHelper.of(Node::getId, Node::getParentId, Node::setChildren);
+
+        List<Integer> ids = new ArrayList<Integer>();
+        for (Node n : helper.findAllChildrenById(nodes, 1)) {
+            ids.add(n.getId());
+        }
+        // 深度优先前序: 1 -> 2 -> 4 -> 5 -> 3 -> 6
+        assertEquals(Arrays.asList(2, 4, 5, 3, 6), ids);
     }
 
     @Data

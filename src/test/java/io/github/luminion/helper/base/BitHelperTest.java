@@ -26,10 +26,18 @@ class BitHelperTest {
     }
 
     @Test
-    void shouldReturnSetBitsInAscendingOrderAndIgnoreNegativeValues() {
+    void shouldReturnSetBitsInAscendingOrderIncludingHighBit() {
         assertEquals(Arrays.asList(1, 2, 4), BitHelper.getSetBits(7));
-        assertEquals(Collections.<Integer>emptyList(), BitHelper.getSetBits(-1));
+        assertEquals(Collections.<Integer>emptyList(), BitHelper.getSetBits(0));
         assertEquals(Arrays.asList(1L, 2L, 8L), BitHelper.getSetBits(11L));
-        assertEquals(Collections.<Long>emptyList(), BitHelper.getSetBits(-1L));
+        assertEquals(Collections.<Long>emptyList(), BitHelper.getSetBits(0L));
+        // 最高位（符号位）也应被正确识别
+        assertEquals(Collections.singletonList(Integer.MIN_VALUE), BitHelper.getSetBits(Integer.MIN_VALUE));
+        assertEquals(Collections.singletonList(Long.MIN_VALUE), BitHelper.getSetBits(Long.MIN_VALUE));
+        // -1 的所有 32/64 位均被设置
+        assertEquals(32, BitHelper.getSetBits(-1).size());
+        assertEquals(64, BitHelper.getSetBits(-1L).size());
+        assertTrue(BitHelper.isSingleBit(Integer.MIN_VALUE));
+        assertTrue(BitHelper.isSingleBit(Long.MIN_VALUE));
     }
 }

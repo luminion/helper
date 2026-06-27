@@ -94,10 +94,8 @@ public abstract class FastExcelHelper {
                 putWriteConverter.invoke(null, converter);
                 putAllConverter.invoke(null, converter);
             }
-        } catch (IllegalAccessException e) {
-            log.warn("IllegalAccessException", e);
-        } catch (InvocationTargetException e) {
-            log.warn("InvocationTargetException", e);
+        } catch (IllegalAccessException | InvocationTargetException e) {
+            throw new IllegalStateException("注册转换器失败", e);
         }
     }
 

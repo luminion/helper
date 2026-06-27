@@ -75,7 +75,7 @@ public abstract class FileHelper {
      * @param dest   输出文件
      */
     @SneakyThrows
-    private static void copyFile(File source, File dest) {
+    public static void copyFile(File source, File dest) {
         if (source == null || source.isDirectory() || dest == null || dest.isDirectory()) {
             throw new IllegalArgumentException("源文件或目标不合法");
         }

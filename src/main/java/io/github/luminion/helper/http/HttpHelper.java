@@ -151,52 +151,58 @@ public class HttpHelper {
             executed = true;
         }
         HttpURLConnection connection = null;
-
-        String url = this.url;
-        // 路径参数
-        if (!queryParams.isEmpty()) {
-            if (!url.contains("?")) {
-                url += "?" + formatQueryParams(queryParams, charset);
-            } else {
-                if (!url.endsWith("?") && !url.endsWith("&")) {
-                    url += "&";
+        try {
+            String url = this.url;
+            // 路径参数
+            if (!queryParams.isEmpty()) {
+                if (!url.contains("?")) {
+                    url += "?" + formatQueryParams(queryParams, charset);
+                } else {
+                    if (!url.endsWith("?") && !url.endsWith("&")) {
+                        url += "&";
+                    }
+                    url += formatQueryParams(queryParams, charset);
                 }
-                url += formatQueryParams(queryParams, charset);
             }
-        }
-        // form参数
-        if (!formParams.isEmpty()) {
-            body = formatQueryParams(formParams, charset);
-        }
-        // 通过远程url连接对象打开连接
-        connection = (HttpURLConnection) new URL(url).openConnection();
-        // 设置连接请求方式
-        connection.setRequestMethod(method);
-        // 设置连接超时时间, 毫秒
-        connection.setConnectTimeout(connectTimeout);
-        // 设置读取超时时间, 毫秒
-        connection.setReadTimeout(readTimeout);
+            // form参数
+            if (!formParams.isEmpty()) {
+                body = formatQueryParams(formParams, charset);
+            }
+            // 通过远程url连接对象打开连接
+            connection = (HttpURLConnection) new URL(url).openConnection();
+            // 设置连接请求方式
+            connection.setRequestMethod(method);
+            // 设置连接超时时间, 毫秒
+            connection.setConnectTimeout(connectTimeout);
+            // 设置读取超时时间, 毫秒
+            connection.setReadTimeout(readTimeout);
 
-        // 设置传入参数的格式(Content-Type等):请求参数应该是 name1=value1&name2=value2 的形式。
-        if (header != null && !header.isEmpty()) {
-            for (Map.Entry<?, ?> entry : header.entrySet()) {
-                connection.setRequestProperty(entry.getKey().toString(), entry.getValue().toString());
+            // 设置传入参数的格式(Content-Type等):请求参数应该是 name1=value1&name2=value2 的形式。
+            if (header != null && !header.isEmpty()) {
+                for (Map.Entry<?, ?> entry : header.entrySet()) {
+                    connection.setRequestProperty(entry.getKey().toString(), entry.getValue().toString());
+                }
             }
-        }
-        // 默认值为：true，当前向远程服务读取数据时，设置为true，该参数可有可无
-        connection.setDoInput(true);
-        if (body != null) {
-            // 默认值为：false，当向远程服务器传送数据/写数据时，需要设置为true
-            connection.setDoOutput(true);
-            try (OutputStream os = connection.getOutputStream()) {
-                // 通过输出流对象将参数写出去/传输出去,它是通过字节数组写出的
-                os.write(body.getBytes(charset));
-                // 通过连接对象获取一个输入流，向远程读取
+            // 默认值为：true，当前向远程服务读取数据时，设置为true，该参数可有可无
+            connection.setDoInput(true);
+            if (body != null) {
+                // 默认值为：false，当向远程服务器传送数据/写数据时，需要设置为true
+                connection.setDoOutput(true);
+                try (OutputStream os = connection.getOutputStream()) {
+                    // 通过输出流对象将参数写出去/传输出去,它是通过字节数组写出的
+                    os.write(body.getBytes(charset));
+                    // 通过连接对象获取一个输入流，向远程读取
+                }
             }
+            responseCode = connection.getResponseCode();
+            log.debug("request url:{}, body:{}", url, body);
+            return connection;
+        } catch (Throwable t) {
+            if (connection != null) {
+                connection.disconnect();
+            }
+            throw t;
         }
-        responseCode = connection.getResponseCode();
-        log.debug("request url:{}, body:{}", url, body);
-        return connection;
 
     }
 
@@ -204,7 +210,7 @@ public class HttpHelper {
     public InputStream responseStream() {
         HttpURLConnection execute = execute();
         int code = responseCode;
-        if (code != 200) {
+        if (code < 200 || code >= 300) {
             log.warn("request may execute failed , http code:{},  url:{}, body:{}", code, url, body);
         }
         InputStream stream = code >= 400 ? execute.getErrorStream() : execute.getInputStream();
@@ -218,12 +224,11 @@ public class HttpHelper {
     public String responseString(Charset charset) {
         StringBuilder sb = new StringBuilder();
         try (InputStream is = responseStream();
-                InputStreamReader isr = new InputStreamReader(is, charset);
-                BufferedReader br = new BufferedReader(isr)) {
-            String temp;
-            while ((temp = br.readLine()) != null) {
-                sb.append(temp);
-                sb.append("\r\n");
+                InputStreamReader isr = new InputStreamReader(is, charset)) {
+            char[] buffer = new char[4096];
+            int len;
+            while ((len = isr.read(buffer)) != -1) {
+                sb.append(buffer, 0, len);
             }
             return sb.toString();
         }

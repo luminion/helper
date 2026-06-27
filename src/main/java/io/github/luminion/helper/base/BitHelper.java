@@ -96,11 +96,11 @@ public abstract class BitHelper {
     }
 
     public static boolean isSingleBit(int bitMask) {
-        return bitMask > 0 && (bitMask & (bitMask - 1)) == 0;
+        return bitMask != 0 && (bitMask & (bitMask - 1)) == 0;
     }
 
     public static boolean isSingleBit(long bitMask) {
-        return bitMask > 0 && (bitMask & (bitMask - 1)) == 0;
+        return bitMask != 0L && (bitMask & (bitMask - 1)) == 0;
     }
 
     public static int mergeBits(int... bitMasks) {
@@ -131,12 +131,14 @@ public abstract class BitHelper {
      * 获取值中所有被设置的位
      * <p>
      * 例如：传入7（二进制0111），返回[1, 2, 4]
+     * <p>
+     * 支持全部 32 个 bit 位，包括最高位（符号位 0x80000000，对应负数）。
      *
-     * @param value 源值（仅处理非负数，负数会被忽略）
-     * @return 所有被设置的位组成的列表，按位权升序排列
+     * @param value 源值
+     * @return 所有被设置的位组成的列表，按位权升序排列；value 为 0 时返回空列表
      */
     public static List<Integer> getSetBits(int value) {
-        if (value <= 0) {
+        if (value == 0) {
             return new ArrayList<>();
         }
         List<Integer> result = new ArrayList<>(Integer.bitCount(value));
@@ -152,12 +154,14 @@ public abstract class BitHelper {
      * 获取值中所有被设置的位 - long版本
      * <p>
      * 例如：传入7L（二进制0111），返回[1, 2, 4]
+     * <p>
+     * 支持全部 64 个 bit 位，包括最高位（符号位 0x8000000000000000L，对应负数）。
      *
-     * @param value 源值（仅处理非负数，负数会被忽略）
-     * @return 所有被设置的位组成的列表，按位权升序排列
+     * @param value 源值
+     * @return 所有被设置的位组成的列表，按位权升序排列；value 为 0 时返回空列表
      */
     public static List<Long> getSetBits(long value) {
-        if (value <= 0) {
+        if (value == 0L) {
             return new ArrayList<>();
         }
         List<Long> result = new ArrayList<>(Long.bitCount(value));

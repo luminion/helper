@@ -35,7 +35,10 @@ public class FfmpegHelper {
         this.tempMediaPath = tempMediaPath;
         this.tempMediaDir = new File(tempMediaPath);
         if (!tempMediaDir.exists()) {
-            tempMediaDir.mkdirs();
+            boolean created = tempMediaDir.mkdirs();
+            if (!created && !tempMediaDir.exists()) {
+                throw new IllegalStateException("无法创建临时目录: " + tempMediaPath);
+            }
         }
     }
 
@@ -72,6 +75,8 @@ public class FfmpegHelper {
         StringBuilder result = new StringBuilder();
         try {
             process = builder.start();
+            // 关闭 stdin，ffmpeg 不需要输入
+            process.getOutputStream().close();
             // 获取到执行完后的信息，那么下面的代码也是需要的
             try (BufferedReader br = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
                 String line;
@@ -135,7 +140,7 @@ public class FfmpegHelper {
         List<String> command = new ArrayList<>();
         command.add(ffplay);
         command.add("-window_title");
-        String fileName = resourcesPath.substring(resourcesPath.lastIndexOf(File.separator) + 1);
+        String fileName = extractFileName(resourcesPath);
         command.add(fileName);
         command.add(resourcesPath);
         // 播放完后自动退出
@@ -153,7 +158,7 @@ public class FfmpegHelper {
         List<String> command = new ArrayList<>();
         command.add(ffplay);
         command.add("-window_title");
-        String fileName = resourcesPath.substring(resourcesPath.lastIndexOf(File.separator) + 1);
+        String fileName = extractFileName(resourcesPath);
         command.add(fileName);
         command.add(resourcesPath);
         command.add("-loop");
@@ -175,7 +180,7 @@ public class FfmpegHelper {
         List<String> command = new ArrayList<>();
         command.add(ffplay);
         command.add("-window_title");
-        String fileName = resourcesPath.substring(resourcesPath.lastIndexOf(File.separator) + 1);
+        String fileName = extractFileName(resourcesPath);
         command.add(fileName);
         command.add(resourcesPath);
         command.add("-x");
@@ -290,39 +295,45 @@ public class FfmpegHelper {
         removeExisted(saveFilePath);
         // 所有要合并的视频转换为ts格式存到videoList里
         List<String> videoList = new ArrayList<>();
-        for (String video : videoResourcesPathList) {
-            List<String> command = new ArrayList<>();
-            command.add(ffmpeg);
-            command.add("-i");
-            command.add(video);
-            command.add("-c");
-            command.add("copy");
-            command.add("-bsf:v");
-            command.add("h264_mp4toannexb");
-            command.add("-f");
-            command.add("mpegts");
-            String videoTempName = video.substring(video.lastIndexOf(File.separator) + 1, video.lastIndexOf("."))
-                    + ".ts";
-            command.add(tempMediaPath + videoTempName);
-            commandStart(command);
-            videoList.add(tempMediaPath + videoTempName);
-        }
+        try {
+            for (String video : videoResourcesPathList) {
+                List<String> command = new ArrayList<>();
+                command.add(ffmpeg);
+                command.add("-i");
+                command.add(video);
+                command.add("-c");
+                command.add("copy");
+                command.add("-bsf:v");
+                command.add("h264_mp4toannexb");
+                command.add("-f");
+                command.add("mpegts");
+                String videoTempName = extractBaseName(video) + ".ts";
+                command.add(tempMediaPath + videoTempName);
+                commandStart(command);
+                videoList.add(tempMediaPath + videoTempName);
+            }
 
-        List<String> command1 = new ArrayList<>();
-        command1.add(ffmpeg);
-        command1.add("-i");
-        StringBuilder buffer = new StringBuilder("concat:");
-        for (int i = 0; i < videoList.size(); i++) {
-            buffer.append(videoList.get(i));
-            if (i != videoList.size() - 1) {
-                buffer.append("|");
+            List<String> command1 = new ArrayList<>();
+            command1.add(ffmpeg);
+            command1.add("-i");
+            StringBuilder buffer = new StringBuilder("concat:");
+            for (int i = 0; i < videoList.size(); i++) {
+                buffer.append(videoList.get(i));
+                if (i != videoList.size() - 1) {
+                    buffer.append("|");
+                }
+            }
+            command1.add(String.valueOf(buffer));
+            command1.add("-c");
+            command1.add("copy");
+            command1.add(saveFilePath);
+            commandStart(command1);
+        } finally {
+            // 清理临时 .ts 文件
+            for (String tsFile : videoList) {
+                new File(tsFile).delete();
             }
         }
-        command1.add(String.valueOf(buffer));
-        command1.add("-c");
-        command1.add("copy");
-        command1.add(saveFilePath);
-        commandStart(command1);
     }
 
     /**
@@ -548,18 +559,15 @@ public class FfmpegHelper {
     public String calculationEndTime(LocalTime starTime, LocalTime endTime) {
         Objects.requireNonNull(starTime, "starTime must not be null");
         Objects.requireNonNull(endTime, "endTime must not be null");
-        long hour = HOURS.between(starTime, endTime);
-        long minutes = MINUTES.between(starTime, endTime);
         long seconds = SECONDS.between(starTime, endTime);
         if (seconds < 0) {
             seconds += 24 * 60 * 60;
-            minutes = seconds / 60;
-            hour = minutes / 60;
         }
-        minutes = minutes > 59 ? minutes % 60 : minutes;
+        long hour = seconds / 3600;
+        long minutes = (seconds % 3600) / 60;
+        long getSeconds = seconds % 60;
         String hourStr = hour < 10 ? "0" + hour : String.valueOf(hour);
         String minutesStr = minutes < 10 ? "0" + minutes : String.valueOf(minutes);
-        long getSeconds = seconds - (hour * 60 + minutes) * 60;
         String secondsStr = getSeconds < 10 ? "0" + getSeconds : String.valueOf(getSeconds);
         return hourStr + ":" + minutesStr + ":" + secondsStr;
     }
@@ -599,8 +607,7 @@ public class FfmpegHelper {
         command.add(videoResourcesPath);
         command.add("-vf");
         command.add("fps=" + fps);
-        String fileName = videoResourcesPath.substring(videoResourcesPath.lastIndexOf("\\") + 1,
-                videoResourcesPath.lastIndexOf("."));
+        String fileName = extractBaseName(videoResourcesPath);
         command.add(targetFileDirPath + fileName + "%d" + ".jpg");
         commandStart(command);
     }
@@ -653,8 +660,6 @@ public class FfmpegHelper {
         command.add("showwavespic=s=1280x240");
         command.add("-frames:v");
         command.add("1");
-        String fileName = audioResourcesPath.substring(audioResourcesPath.lastIndexOf("\\") + 1,
-                audioResourcesPath.lastIndexOf("."));
         // jpg可换为png
         command.add(saveFilePath);
         commandStart(command);
@@ -728,6 +733,29 @@ public class FfmpegHelper {
         command.add("amerge=inputs=2,pan=stereo|c0<c0+c1|c1<c2+c3");
         command.add(saveFilePath);
         commandStart(command);
+    }
+
+    /**
+     * 提取路径中的文件名（带扩展名），同时兼容 {@code /} 与 {@code \} 分隔符，跨平台安全。
+     *
+     * @param path 文件路径
+     * @return 文件名（含扩展名）
+     */
+    private static String extractFileName(String path) {
+        int slash = Math.max(path.lastIndexOf('/'), path.lastIndexOf('\\'));
+        return slash >= 0 ? path.substring(slash + 1) : path;
+    }
+
+    /**
+     * 提取路径中的文件名（不含扩展名），同时兼容 {@code /} 与 {@code \} 分隔符，跨平台安全。
+     *
+     * @param path 文件路径
+     * @return 文件名（不含扩展名）
+     */
+    private static String extractBaseName(String path) {
+        String fileName = extractFileName(path);
+        int dot = fileName.lastIndexOf('.');
+        return dot >= 0 ? fileName.substring(0, dot) : fileName;
     }
 
 }

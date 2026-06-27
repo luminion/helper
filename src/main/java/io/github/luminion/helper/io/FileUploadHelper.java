@@ -151,6 +151,24 @@ public class FileUploadHelper {
      */
     @SneakyThrows
     public boolean mergeFile(String fileMD5, String fileExt, int chunkCount) {
+        return mergeFile(fileMD5, fileExt, chunkCount, -1);
+    }
+
+    /**
+     * 合并分片（带分片大小校验）
+     * <p>
+     * 相比 {@link #mergeFile(String, String, int)}，本方法额外校验每个分片的实际字节数：
+     * 除最后一个分片外，其余分片大小必须严格等于 {@code chunkSize}，最后一个分片需大于 0 且不超过 {@code chunkSize}。
+     * 这样可避免分片写入中途崩溃导致的"文件存在但内容不完整"被错误合并。
+     *
+     * @param fileMD5    文件MD5值
+     * @param fileExt    文件名称
+     * @param chunkCount 分片总数量
+     * @param chunkSize  标准分片大小（字节）；传入小于等于 0 时跳过大小校验，行为同 {@link #mergeFile(String, String, int)}
+     * @return boolean
+     */
+    @SneakyThrows
+    public boolean mergeFile(String fileMD5, String fileExt, int chunkCount, long chunkSize) {
         Path chunkDir = resolveChunkDir(fileMD5);
         Path outputPath = resolveMergePath(fileMD5, fileExt);
 
@@ -164,8 +182,22 @@ public class FileUploadHelper {
         }
 
         for (int i = 0; i < chunkCount; i++) {
-            if (!Files.isRegularFile(chunkDir.resolve(i + ".part"))) {
+            Path chunkPath = chunkDir.resolve(i + ".part");
+            if (!Files.isRegularFile(chunkPath)) {
                 return false;
+            }
+            if (chunkSize > 0) {
+                long actualSize = Files.size(chunkPath);
+                boolean isLastChunk = i == chunkCount - 1;
+                if (isLastChunk) {
+                    if (actualSize <= 0 || actualSize > chunkSize) {
+                        log.warn("最后一个分片大小异常: index={}, size={}, chunkSize={}", i, actualSize, chunkSize);
+                        return false;
+                    }
+                } else if (actualSize != chunkSize) {
+                    log.warn("分片大小不完整: index={}, size={}, expected={}", i, actualSize, chunkSize);
+                    return false;
+                }
             }
         }
 

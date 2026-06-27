@@ -4,6 +4,34 @@
 
 版本号遵循语义化版本(SemVer)。
 
+## 1.2.2 (未发布)
+
+### 修复 / Fixed
+- 🔴 `TreeHelper.findAllChildrenById/findAllChildrenByNode` 修复只沿首个子分支递归的严重缺陷,现在正确返回所有层级的后代节点(深度优先前序遍历)
+- 🔴 `HttpHelper.execute()` 修复异常路径连接泄漏问题,在异常时确保调用 `connection.disconnect()`
+- 🔴 `HttpHelper.responseString()` 修复逐行读取改写原始换行符的问题,改用字符缓冲直接读取
+- 🔴 `ObjectMapperHelper` 全局 `instance` 字段添加 `volatile` 修饰,修复多线程可见性问题
+- 🔴 `FfmpegHelper` 构造函数添加临时目录创建失败检查,失败时抛出 `IllegalStateException`
+- 🔴 `FfmpegHelper.commandStart()` 显式关闭 `process.getOutputStream()`,避免流泄漏
+- 🔴 `FfmpegHelper.mergeVideosUnstable()` 在 finally 块清理临时 .ts 文件,修复磁盘空间泄漏
+- 🔴 `FfmpegHelper.calculationEndTime()` 修复跨午夜时间计算错误,改为统一的秒级计算逻辑
+- 🔴 `FfmpegHelper` 修复路径文件名提取硬编码反斜杠 `\` 的跨平台问题,改用同时兼容 `/` 与 `\` 的辅助方法
+- 🔴 `BitHelper.getSetBits/isSingleBit` 修复最高位(符号位)被静默丢弃的问题,现在支持全部 32/64 个 bit 位
+- 🔴 `EasyExcelHelper` 和 `FastExcelHelper` 反射注册转换器失败时抛出 `IllegalStateException` 而非静默记录 warn
+- 🟡 `HttpHelper.responseStream()` 优化成功码判断,将 2xx 范围视为成功(之前只认 200)
+- 🟡 `BeanHelper.objectToMap()` 修复 Map 输入时忽略 `ignoreNull` 参数的问题,现在正确复制并过滤
+- 🟡 `BeanHelper.objectToMap()` 修复 null 输入返回 null 的问题,现在返回空 Map 避免 NPE
+
+### 新增 / Added
+- ✨ `FileUploadHelper.mergeFile(fileMD5, fileExt, chunkCount, chunkSize)` 新增带分片大小校验的合并重载,避免分片写入中途崩溃导致的"文件存在但不完整"被错误合并
+
+### 改进 / Improved
+- ✨ `FileHelper.copyFile()` 方法改为 public,允许用户直接复制单个文件
+- 📚 `FfmpegHelper` 清理 `audioWaveform()` 中未使用的死代码
+- 📚 `GeoHelper.gcj02ToWgs84/toWGS84` 补全坐标转换精度限制说明(约 1～2 米误差)
+- 📚 `BitHelper` 完善 `getSetBits` 文档,说明支持全部 bit 位
+
+
 ## 1.2.1
 
 ### 新增 / Added
